@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --accent-green: #b1f90f;
+  --accent-blue: #2d32ff;
+  --gradient-start: #06051a;
+  --gradient-middle: #0a0a20;
+  --gradient-end: #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-lexend);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Additional styles for the coming soon page */
+.bg-accent-green {
+  background-color: var(--accent-green);
+}
+
+.text-accent-green {
+  color: var(--accent-green);
+}
+
+.bg-accent-blue {
+  background-color: var(--accent-blue);
+}
+
+.text-accent-blue {
+  color: var(--accent-blue);
+}
+
+.gradient-bg {
+  background: linear-gradient(
+    to bottom right,
+    var(--gradient-start),
+    var(--gradient-middle),
+    var(--gradient-end)
+  );
+}
+
+/* Smooth scrolling for the entire site */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animations and transitions */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.8s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Section transition styles */
+.section-fullscreen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* For smoother section transitions */
+.smooth-scroll-container {
+  height: 100vh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
