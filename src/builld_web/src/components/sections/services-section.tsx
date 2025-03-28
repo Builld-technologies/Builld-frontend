@@ -1,99 +1,162 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
-import {
-  slideInLeftVariant,
-  slideInRightVariant,
-} from "@/animations/section-animations";
+import { useState } from "react";
 
-export default function ServicesSection() {
-  const [ref, inView] = useInView({
-    threshold: 0.3,
-    triggerOnce: false,
-  });
+export default function PricingSection() {
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
 
-  const services = [
+  const plans = [
     {
-      name: "Product Design",
-      bgColor: "bg-accent-green",
-      textColor: "text-black",
+      name: "LaunchPad",
+      description: "Get online fast with a professional digital presence",
+      oneTimeTotalPrice: 500,
+      oneTimeServices: [
+        { name: "Website Design & Development", price: 100 },
+        { name: "Branding & Visual Identity", price: 50 },
+        { name: "Basic E-Commerce Setup", price: 150 },
+        { name: "Social Media Professional Setup", price: 100 },
+        { name: "Domain & Hosting Registration", price: 100 }
+      ],
+      subscriptionServices: [
+        { name: "SEO-Optimized Content", price: 100 },
+        { name: "Basic Automation & CRM", price: 150 }
+      ],
+      monthlyPricing: {
+        base: 150,
+        monthly: 120,
+        quarterly: 100,
+        yearly: 80
+      }
     },
-    { name: "Web Development", bgColor: "bg-black", textColor: "text-white" },
     {
-      name: "Product Management",
-      bgColor: "bg-white",
-      textColor: "text-black",
-    },
+      name: "Ignite",
+      description: "Scale, optimize, and automate your digital operations",
+      oneTimeTotalPrice: 1000,
+      oneTimeServices: [
+        { name: "Website Performance Optimization", price: 400 },
+        { name: "E-Commerce & Sales Optimization", price: 350 },
+        { name: "Security & Cloud Infrastructure", price: 150 },
+        { name: "Compliance & Privacy Enhancements", price: 100 }
+      ],
+      subscriptionServices: [
+        { name: "Advanced Digital Marketing", price: 200 },
+        { name: "Business Automation & CRM", price: 250 },
+        { name: "Data Analytics & Insights", price: 150 }
+      ],
+      monthlyPricing: {
+        base: 200,
+        monthly: 180,
+        quarterly: 150,
+        yearly: 120
+      }
+    }
   ];
 
   return (
-    <section
-      id="section-services"
-      ref={ref}
-      className="section-fullscreen snap-section bg-accent-blue"
+    <section 
+      id="section-pricing" 
+      className="bg-gradient-to-br from-purple-700 to-purple-900 flex flex-col items-center justify-center py-16 px-6"
     >
-      <div className="max-w-7xl w-full px-6 md:px-10 mx-auto">
-        <motion.span
-          className="text-sm mb-6 inline-block"
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5 }}
-        >
-          What we offer
-        </motion.span>
-
-        <div className="flex flex-col md:flex-row justify-between items-start">
-          <motion.div
-            className="max-w-xl mb-10 md:mb-0"
-            variants={slideInLeftVariant}
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
+      <div className="text-center mb-12">
+        <h2 className="text-5xl font-extrabold text-white mb-3">Plans & Pricing</h2>
+        <p className="text-xl text-purple-100">Flexible solutions for your digital growth</p>
+      </div>
+      
+      <div className="flex space-x-2 bg-white/10 p-2 rounded-full mb-8">
+        {['monthly', 'quarterly', 'yearly'].map((period) => (
+          <button
+            key={period}
+            onClick={() => setSelectedPlan(period as 'monthly' | 'quarterly' | 'yearly')}
+            className={`px-6 py-2 rounded-full capitalize transition-all ${
+              selectedPlan === period 
+                ? 'bg-white text-purple-700 font-bold shadow-md' 
+                : 'text-white hover:bg-white/10'
+            }`}
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Solutions Tailored to
-              <br />
-              Drive Your <span className="text-accent-green">Growth</span>
-            </h2>
+            {period}
+          </button>
+        ))}
+      </div>
 
-            <p className="text-lg md:text-xl mb-8">
-              From design to development to maintenance, we
-              <br />
-              provide comprehensive digital solutions that fit
-              <br />
-              your unique needs.
-            </p>
-
-            <motion.button
-              className="bg-accent-green text-black rounded-full px-8 py-3 flex items-center"
+      <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+        {plans.map((plan, index) => {
+          const isLaunchPad = index === 0;
+          // Choose inner container backgrounds based on plan
+          const oneTimeBg = isLaunchPad ? "bg-gray-100" : "bg-gray-800";
+          const innerTextColor = isLaunchPad ? "text-gray-900" : "text-gray-100";
+          
+          return (
+            <motion.div
+              key={plan.name}
+              className={`p-10 rounded-3xl shadow-xl transition-all duration-300 ${isLaunchPad ? 'bg-white text-gray-900' : 'bg-gray-900 text-white'}`}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
-              <span>Start a Project</span>
-              <span className="ml-2">{/* TODO: place svg image */}</span>
-            </motion.button>
-          </motion.div>
+              <div className="mb-6">
+                <h3 className="text-3xl font-bold">{plan.name}</h3>
+                <p className="text-lg opacity-80 mt-2">{plan.description}</p>
+              </div>
 
-          <motion.div
-            className="flex flex-col space-y-4"
-            variants={slideInRightVariant}
-            initial="hidden"
-            animate={inView ? "visible" : "hidden"}
-          >
-            {services.map((service, index) => (
-              <motion.div
-                key={service.name}
-                className={`${service.bgColor} ${service.textColor} rounded-full px-8 py-4 font-medium text-xl`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+              {/* One-Time Services Package */}
+              <div className="mb-6">
+                <h4 className="text-xl font-semibold mb-4">One-Time Services Package</h4>
+                <div className={`${oneTimeBg} ${innerTextColor} p-6 rounded-xl`}>
+                  <ul className="space-y-3 mb-4">
+                    {plan.oneTimeServices.map((service) => (
+                      <li key={service.name} className="flex justify-between items-center">
+                        <span className="flex items-center">
+                          <span className="text-green-400 text-lg mr-3">✔</span>
+                          {service.name}
+                        </span>
+                        <span className="font-semibold text-sm">
+                          ${service.price}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="border-t pt-3 flex justify-between items-center">
+                    <span className="font-bold">Total One-Time Package</span>
+                    <span className="text-xl font-bold">${plan.oneTimeTotalPrice}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscription Services Summary */}
+              <div className="mb-6">
+                <h4 className="text-xl font-semibold mb-4">Optional Subscription Services</h4>
+                <div className={`${oneTimeBg} ${innerTextColor} p-6 rounded-xl`}>
+                  <ul className="list-disc list-inside space-y-2">
+                    {plan.subscriptionServices.map((service) => (
+                      <li key={service.name}>{service.name}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 font-bold">
+                    Subscription Fee: ${plan.monthlyPricing[selectedPlan]}/mo
+                  </p>
+                </div>
+              </div>
+
+              {/* Pricing and Total */}
+              <div className="mb-8">
+                <div className="text-4xl font-bold">
+                  ${plan.monthlyPricing[selectedPlan]}
+                  <span className="text-lg opacity-60 ml-2">/mo</span>
+                </div>
+                <div className="text-sm opacity-70 mt-2">
+                  One-Time Package: ${plan.oneTimeTotalPrice}
+                </div>
+              </div>
+
+              <motion.button
+                className={`w-full py-3 rounded-xl text-lg font-semibold transition-all ${isLaunchPad ? 'bg-purple-700 text-white hover:bg-purple-800' : 'bg-white text-gray-900 hover:bg-gray-100'}`}
                 whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {service.name}
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+                Get Started
+              </motion.button>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );

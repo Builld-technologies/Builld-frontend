@@ -11,6 +11,7 @@ import ProcessSection from "@/components/sections/process-section";
 import ProcessSteps from "@/components/sections/process-steps";
 import AllInWeeksSection from "@/components/sections/all-in-weeks";
 import ServicesSection from "@/components/sections/services-section";
+import ContactUs from "@/components/sections/contact-us";
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -164,6 +165,7 @@ export default function Home() {
           <ProcessSteps />
           <AllInWeeksSection />
           <ServicesSection />
+          <ContactUs />
         </div>
       </div>
     </ScrollProvider>
