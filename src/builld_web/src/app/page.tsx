@@ -10,8 +10,6 @@ import Header from "@/components/layout/header";
 import PageIndicator from "@/components/ui/page-indicator";
 import SplashScreen from "@/components/sections/splash-screen";
 import ProcessSection from "@/components/sections/process-section";
-import ProcessSteps from "@/components/sections/process-steps";
-import AllInWeeksSection from "@/components/sections/all-in-weeks";
 import ServicesSection from "@/components/sections/services-section";
 import ContactUs from "@/components/sections/contact-us";
 import HeroAndAboutSections from "@/components/sections/hero_about_section";
@@ -120,8 +118,6 @@ function HomeContent() {
         <SplashScreen onComplete={handleSplashComplete} />
         <HeroAndAboutSections />
         <ProcessSection />
-        <ProcessSteps />
-        <AllInWeeksSection />
         <ServicesSection />
         <ContactUs />
       </div>
