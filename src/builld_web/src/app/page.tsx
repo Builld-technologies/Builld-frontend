@@ -18,8 +18,21 @@ export default function Home() {
   const [splashComplete, setSplashComplete] = useState(false);
   const initialScrollHandled = useRef(false);
 
+  // Handle splash completion
+  const handleSplashComplete = () => {
+    setSplashComplete(true);
+
+    // No need for another timeout; we directly use the one from the splash component
+    const heroSection = document.getElementById("section-home");
+    if (heroSection && !initialScrollHandled.current) {
+      initialScrollHandled.current = true;
+      // The hero section is already visible; no need to scroll
+    }
+  };
+
+  // Section scrolling handler
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !splashComplete) return;
 
     let isScrolling = false;
     let touchStartY = 0;
@@ -31,21 +44,14 @@ export default function Home() {
       }
 
       const direction = e.deltaY > 0 ? 1 : -1;
-
       const sections = document.querySelectorAll('section[id^="section-"]');
 
+      // Find current section
       let currentIndex = 0;
-      let currentSectionFound = false;
-
       sections.forEach((section, index) => {
         const rect = section.getBoundingClientRect();
-        if (
-          rect.top <= 100 &&
-          rect.bottom >= window.innerHeight / 3 &&
-          !currentSectionFound
-        ) {
+        if (rect.top <= 100 && rect.bottom >= window.innerHeight / 3) {
           currentIndex = index;
-          currentSectionFound = true;
         }
       });
 
@@ -57,20 +63,10 @@ export default function Home() {
 
       if (targetIndex === currentIndex) return;
 
-      const targetSection = sections[targetIndex] as HTMLElement;
-      const currentSection = sections[currentIndex] as HTMLElement;
-
-      const isProcessSection =
-        targetSection.id === "section-process-steps" ||
-        currentSection.id === "section-process-steps";
-
-      if (isProcessSection && targetSection.id === currentSection.id) {
-        return;
-      }
-
       e.preventDefault();
       isScrolling = true;
 
+      const targetSection = sections[targetIndex] as HTMLElement;
       targetSection.scrollIntoView({ behavior: "smooth" });
 
       setTimeout(() => {
@@ -91,7 +87,6 @@ export default function Home() {
       if (Math.abs(touchStartY - touchY) > 50) {
         const sections = document.querySelectorAll('section[id^="section-"]');
 
-        // Find current visible section
         let currentIndex = 0;
         sections.forEach((section, index) => {
           const rect = section.getBoundingClientRect();
@@ -100,21 +95,18 @@ export default function Home() {
           }
         });
 
-        // Calculate target section index
         const targetIndex = Math.max(
           0,
           Math.min(sections.length - 1, currentIndex + direction)
         );
 
         if (targetIndex === currentIndex) return;
-
         isScrolling = true;
 
         const targetSection = sections[targetIndex] as HTMLElement;
         targetSection.scrollIntoView({ behavior: "smooth" });
 
         touchStartY = touchY;
-
         setTimeout(() => {
           isScrolling = false;
         }, 1000);
@@ -130,23 +122,7 @@ export default function Home() {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
     };
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSplashComplete(true);
-
-      if (!initialScrollHandled.current) {
-        const heroSection = document.getElementById("section-home");
-        if (heroSection) {
-          heroSection.scrollIntoView({ behavior: "smooth" });
-          initialScrollHandled.current = true;
-        }
-      }
-    }, 3500);
-
-    return () => clearTimeout(timer);
-  }, []);
+  }, [splashComplete]);
 
   return (
     <ScrollProvider>
@@ -158,7 +134,10 @@ export default function Home() {
           className="h-screen overflow-y-auto scroll-smooth"
           ref={containerRef}
         >
-          <SplashScreen />
+          {/* Splash screen overlay - slides up to reveal content */}
+          <SplashScreen onComplete={handleSplashComplete} />
+
+          {/* Content is always present, just covered by splash initially */}
           <HeroSection />
           <AboutSection />
           <ProcessSection />

@@ -1,61 +1,104 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
-export default function SplashScreen() {
+interface SplashScreenProps {
+  onComplete?: () => void;
+}
+
+export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const [progress, setProgress] = useState(0);
-  const hasCompleted = useRef(false);
+  const [currentMilestone, setCurrentMilestone] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const milestones = [0, 25, 50, 75, 100];
+
+  // Progress animation
   useEffect(() => {
-    const duration = 3000;
-    const interval = 30;
-    const steps = duration / interval;
+    if (currentMilestone >= milestones.length - 1) return;
 
-    let currentProgress = 0;
-    const timer = setInterval(() => {
-      currentProgress += 100 / steps;
+    const current = milestones[currentMilestone];
+    const next = milestones[currentMilestone + 1];
+    const duration = 800;
+    const startTime = Date.now();
 
-      if (currentProgress >= 100) {
-        clearInterval(timer);
-        currentProgress = 100;
-        hasCompleted.current = true;
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      setProgress(current + (next - current) * progress);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCurrentMilestone((prev) => prev + 1);
       }
+    };
 
-      setProgress(currentProgress);
-    }, interval);
+    const timer = setTimeout(
+      () => requestAnimationFrame(animate),
+      currentMilestone === 0 ? 500 : 300
+    );
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [currentMilestone, milestones]);
+
+  // Handle completion
+  useEffect(() => {
+    if (currentMilestone === milestones.length - 1) {
+      setTimeout(() => {
+        setIsExiting(true);
+        setTimeout(() => {
+          if (onComplete) onComplete();
+        }, 800);
+      }, 500);
+    }
+  }, [currentMilestone, milestones.length, onComplete]);
 
   return (
-    <section
-      id="section-splash"
-      className="min-h-screen w-full flex flex-col items-center justify-center bg-black relative"
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+      initial={{ y: 0 }}
+      animate={{ y: isExiting ? "-100%" : 0 }}
+      transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
     >
-      <motion.div
-        className="relative z-10 flex items-center justify-center h-full w-full"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-      >
-        <div className="text-white text-6xl md:text-8xl font-bold">
-          bui<span className="text-accent-green">l</span>d.
-        </div>
-      </motion.div>
+      {/* Logo */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <Image
+          src="/images/logo.svg"
+          alt="Build Logo"
+          width={240}
+          height={60}
+          priority
+          className="w-auto h-auto"
+        />
+      </div>
 
-      <div className="absolute bottom-6 left-0 right-0 flex items-center px-6">
-        <div className="h-px w-full bg-gray-800 relative">
-          {/* progress dot */}
+      {/* Progress bar */}
+      <div className="absolute bottom-8 left-0 right-0 px-12 w-full">
+        <div className="h-1.5 w-full rounded bg-[#1a1a1a] relative">
           <motion.div
-            className="absolute top-1/2 transform -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent-green"
-            style={{ left: `${progress}%` }}
+            className="h-full rounded bg-[#b0ff00]"
+            style={{ width: `${progress}%` }}
           />
         </div>
-        <div className="text-white text-sm ml-2 min-w-[40px]">
-          {Math.round(progress)}%
+
+        {/* Percentage */}
+        <div className="absolute right-12 top-[-30px]">
+          <motion.div
+            key={milestones[currentMilestone]}
+            className="text-white text-xl font-bold"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {milestones[currentMilestone]}%
+          </motion.div>
         </div>
       </div>
-    </section>
+    </motion.div>
   );
 }
