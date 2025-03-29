@@ -1,91 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import Button from "../ui/button";
-import { fadeUpVariant, staggerChildren } from "@/animations/section-animations";
-import BackgroundAnimation from "../ui/background-animation";
-
-interface FormData {
-  email: string;
-  phoneNumber: string;
-  businessStage: string;
-  challenge: string;
-}
+import { useInView } from "react-intersection-observer";
+import { useScroll } from "@/context/scroll-context";
 
 export default function ContactUs() {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     email: "",
     phoneNumber: "",
     businessStage: "",
     challenge: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-  };
+  const { setActiveSection } = useScroll();
+  const [ref, inView] = useInView({ threshold: 0.3 });
+
+  // Update active section when this section comes into view
+  useEffect(() => {
+    if (inView) {
+      const timer = setTimeout(() => {
+        setActiveSection("contact");
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [inView, setActiveSection]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-b from-black to-zinc-900 flex items-center justify-center px-4 py-16">
-      <BackgroundAnimation color="blue" />
-      
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-6xl flex flex-col md:flex-row items-center justify-between gap-12"
-      >
+    <section
+      id="section-contact"
+      ref={ref}
+      className="section-fullscreen snap-section flex items-center justify-center px-4 py-16"
+    >
+      <div className="relative z-10 w-full max-w-6xl flex flex-col md:flex-row items-center justify-between gap-12">
         {/* Left side: Text */}
         <div className="w-full max-w-2xl text-white">
-          <motion.h2 
+          <motion.h2
             className="text-4xl md:text-5xl font-bold mb-6"
-            variants={fadeUpVariant}
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.5 }}
           >
-            Let's Build <span className="text-accent-green">Something</span> Together
+            Let&apos;s Build <span className="text-[#b0ff00]">Something</span>{" "}
+            Together
           </motion.h2>
-          <motion.p 
+
+          <motion.p
             className="text-lg text-gray-300 mb-8"
-            variants={fadeUpVariant}
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Ready to bring your ideas to life? Reach out to us and let's get started.
+            Ready to bring your ideas to life? Reach out to us and let&apos;s
+            get started.
           </motion.p>
-          
+
           {/* Contact Info */}
-          <motion.div 
-            className="space-y-4"
-            variants={staggerChildren}
-          >
-            <motion.div variants={fadeUpVariant}>
-              <h3 className="text-accent-green font-medium">Email</h3>
-              <p>myemail@gmail.com</p>
-            </motion.div>
-            <motion.div variants={fadeUpVariant}>
-              <h3 className="text-accent-green font-medium">Phone Number</h3>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-[#b0ff00] font-medium">Email</h3>
+              <p>contact@builld.io</p>
+            </div>
+            <div>
+              <h3 className="text-[#b0ff00] font-medium">Phone Number</h3>
               <p>123-456-7890</p>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
 
         {/* Right side: Form */}
         <motion.form
-          onSubmit={handleSubmit}
           className="w-full max-w-xl bg-zinc-800/50 backdrop-blur-lg p-8 rounded-2xl"
-          variants={fadeUpVariant}
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Email
               </label>
               <input
@@ -95,13 +99,16 @@ export default function ContactUs() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-green transition-all"
+                className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#b0ff00]"
                 placeholder="your@email.com"
               />
             </div>
 
             <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Phone Number
               </label>
               <input
@@ -110,14 +117,16 @@ export default function ContactUs() {
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-green transition-all"
+                className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#b0ff00]"
                 placeholder="123-456-7890"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label htmlFor="businessStage" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="businessStage"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Business Stage
               </label>
               <select
@@ -125,18 +134,20 @@ export default function ContactUs() {
                 name="businessStage"
                 value={formData.businessStage}
                 onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-green transition-all"
+                className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#b0ff00]"
               >
                 <option value="">Choose a Plan</option>
-                <option value="1">LaunchPad</option>
-                <option value="2">Ignite</option>
+                <option value="LaunchPad">LaunchPad</option>
+                <option value="Ignite">Ignite</option>
               </select>
             </div>
           </div>
 
           <div className="mb-6">
-            <label htmlFor="challenge" className="block text-sm font-medium text-gray-200 mb-2">
+            <label
+              htmlFor="challenge"
+              className="block text-sm font-medium text-gray-200 mb-2"
+            >
               Your Biggest Challenge
             </label>
             <textarea
@@ -144,27 +155,22 @@ export default function ContactUs() {
               name="challenge"
               value={formData.challenge}
               onChange={handleChange}
-              required
               rows={4}
-              className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-green transition-all resize-none"
+              className="w-full px-4 py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#b0ff00] resize-none"
               placeholder="What's your biggest challenge right now?"
             />
           </div>
 
-          <motion.div
+          <motion.button
+            type="submit"
+            className="w-full py-4 bg-[#b0ff00] text-black rounded-lg text-lg font-medium hover:bg-[#9ee600] transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Button
-            //   type="submit"
-              variant="primary"
-              className="w-full justify-center py-4 text-lg font-medium"
-            >
-              Send Message
-            </Button>
-          </motion.div>
+            Send Message
+          </motion.button>
         </motion.form>
-      </motion.div>
+      </div>
     </section>
   );
 }

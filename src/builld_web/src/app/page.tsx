@@ -1,44 +1,39 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
-import { ScrollProvider } from "@/context/scroll-context";
+import { useRef, useState, useCallback, useEffect } from "react";
+import {
+  ScrollProvider,
+  useScroll,
+  SectionType,
+} from "@/context/scroll-context";
 import Header from "@/components/layout/header";
 import PageIndicator from "@/components/ui/page-indicator";
 import SplashScreen from "@/components/sections/splash-screen";
-import HeroSection from "@/components/sections/hero-section";
-import AboutSection from "@/components/sections/about-section";
 import ProcessSection from "@/components/sections/process-section";
 import ProcessSteps from "@/components/sections/process-steps";
 import AllInWeeksSection from "@/components/sections/all-in-weeks";
 import ServicesSection from "@/components/sections/services-section";
 import ContactUs from "@/components/sections/contact-us";
+import HeroAndAboutSections from "@/components/sections/hero_about_section";
 
-export default function Home() {
+function HomeContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [splashComplete, setSplashComplete] = useState(false);
-  const initialScrollHandled = useRef(false);
+  const { setActiveSection } = useScroll();
+  const isScrollingRef = useRef(false);
 
   // Handle splash completion
-  const handleSplashComplete = () => {
+  const handleSplashComplete = useCallback(() => {
     setSplashComplete(true);
+    setActiveSection("hero");
+  }, [setActiveSection]);
 
-    // No need for another timeout; we directly use the one from the splash component
-    const heroSection = document.getElementById("section-home");
-    if (heroSection && !initialScrollHandled.current) {
-      initialScrollHandled.current = true;
-      // The hero section is already visible; no need to scroll
-    }
-  };
-
-  // Section scrolling handler
+  // Setup scroll snapping
   useEffect(() => {
     if (!containerRef.current || !splashComplete) return;
 
-    let isScrolling = false;
-    let touchStartY = 0;
-
     const handleWheel = (e: WheelEvent) => {
-      if (isScrolling) {
+      if (isScrollingRef.current) {
         e.preventDefault();
         return;
       }
@@ -47,15 +42,17 @@ export default function Home() {
       const sections = document.querySelectorAll('section[id^="section-"]');
 
       // Find current section
+      const windowHeight = window.innerHeight;
       let currentIndex = 0;
+
       sections.forEach((section, index) => {
         const rect = section.getBoundingClientRect();
-        if (rect.top <= 100 && rect.bottom >= window.innerHeight / 3) {
+        if (Math.abs(rect.top) < windowHeight / 2) {
           currentIndex = index;
         }
       });
 
-      // Calculate target section index
+      // Calculate target section
       const targetIndex = Math.max(
         0,
         Math.min(sections.length - 1, currentIndex + direction)
@@ -64,55 +61,42 @@ export default function Home() {
       if (targetIndex === currentIndex) return;
 
       e.preventDefault();
-      isScrolling = true;
+      isScrollingRef.current = true;
 
+      // Scroll to target section
       const targetSection = sections[targetIndex] as HTMLElement;
       targetSection.scrollIntoView({ behavior: "smooth" });
 
+      // Update active section
+      const sectionId = targetSection.id.replace("section-", "") as SectionType;
+      setActiveSection(sectionId);
+
+      // Reset scrolling flag
       setTimeout(() => {
-        isScrolling = false;
+        isScrollingRef.current = false;
       }, 1000);
     };
+
+    // Touch handling
+    let touchStartY = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isScrolling) return;
+      if (isScrollingRef.current) return;
 
       const touchY = e.touches[0].clientY;
       const direction = touchStartY > touchY ? 1 : -1;
 
       if (Math.abs(touchStartY - touchY) > 50) {
-        const sections = document.querySelectorAll('section[id^="section-"]');
-
-        let currentIndex = 0;
-        sections.forEach((section, index) => {
-          const rect = section.getBoundingClientRect();
-          if (rect.top <= 100 && rect.bottom >= window.innerHeight / 3) {
-            currentIndex = index;
-          }
-        });
-
-        const targetIndex = Math.max(
-          0,
-          Math.min(sections.length - 1, currentIndex + direction)
-        );
-
-        if (targetIndex === currentIndex) return;
-        isScrolling = true;
-
-        const targetSection = sections[targetIndex] as HTMLElement;
-        targetSection.scrollIntoView({ behavior: "smooth" });
-
-        touchStartY = touchY;
-        setTimeout(() => {
-          isScrolling = false;
-        }, 1000);
+        const event = new WheelEvent("wheel", { deltaY: direction });
+        handleWheel(event);
       }
     };
 
+    // Add event listeners
     window.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: true });
@@ -122,31 +106,33 @@ export default function Home() {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [splashComplete]);
+  }, [splashComplete, setActiveSection]);
 
   return (
-    <ScrollProvider>
-      <div className="relative h-screen overflow-hidden">
-        {splashComplete && <Header />}
-        {splashComplete && <PageIndicator />}
+    <div className="relative h-screen overflow-hidden">
+      {splashComplete && <Header />}
+      {splashComplete && <PageIndicator />}
 
-        <div
-          className="h-screen overflow-y-auto scroll-smooth"
-          ref={containerRef}
-        >
-          {/* Splash screen overlay - slides up to reveal content */}
-          <SplashScreen onComplete={handleSplashComplete} />
-
-          {/* Content is always present, just covered by splash initially */}
-          <HeroSection />
-          <AboutSection />
-          <ProcessSection />
-          <ProcessSteps />
-          <AllInWeeksSection />
-          <ServicesSection />
-          <ContactUs />
-        </div>
+      <div
+        className="h-screen overflow-y-auto scroll-smooth snap-y snap-mandatory"
+        ref={containerRef}
+      >
+        <SplashScreen onComplete={handleSplashComplete} />
+        <HeroAndAboutSections />
+        <ProcessSection />
+        <ProcessSteps />
+        <AllInWeeksSection />
+        <ServicesSection />
+        <ContactUs />
       </div>
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <ScrollProvider>
+      <HomeContent />
     </ScrollProvider>
   );
 }

@@ -7,12 +7,12 @@ import gradientBg from "@public/animations/gradient-background.json";
 
 interface BackgroundAnimationProps {
   animationData?: object;
-  color?: "gradient" | "blue";
+  withBlur?: boolean;
 }
 
 export default function BackgroundAnimation({
   animationData = gradientBg,
-  color = "gradient",
+  withBlur = false,
 }: BackgroundAnimationProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -22,11 +22,11 @@ export default function BackgroundAnimation({
 
   if (!mounted) return null;
 
-  // if animation data is provided, use Lottie
-  if (animationData) {
-    return (
+  return (
+    <>
+      {/* Base Animation Layer */}
       <motion.div
-        className="absolute inset-0 z-0 w-full h-full"
+        className="absolute inset-0 z-0 w-full h-full overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
@@ -40,18 +40,20 @@ export default function BackgroundAnimation({
           }}
         />
       </motion.div>
-    );
-  }
 
-  // if no animation data, fall back to CSS gradient
-  return (
-    <motion.div
-      className={`absolute inset-0 z-0 w-full h-full ${
-        color === "blue" ? "bg-accent-blue" : "gradient-bg"
-      }`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1 }}
-    />
+      {/* Blur Overlay - Exactly matching Figma specs */}
+      {withBlur && (
+        <motion.div
+          className="absolute inset-0 z-1 w-full h-full"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          style={{
+            backdropFilter: "blur(100px)",
+            backgroundColor: "#FFFFFF1A", // White at 10% opacity
+          }}
+        />
+      )}
+    </>
   );
 }
