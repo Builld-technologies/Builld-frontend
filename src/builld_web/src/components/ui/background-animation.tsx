@@ -50,7 +50,7 @@ export default function BackgroundAnimation({
           transition={{ duration: 1 }}
           style={{
             backdropFilter: "blur(100px)",
-            backgroundColor: "#FFFFFF1A", // White at 10% opacity
+            backgroundColor: "#FFFFFF1A",
           }}
         />
       )}

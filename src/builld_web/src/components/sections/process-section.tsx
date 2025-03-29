@@ -23,59 +23,52 @@ type CardIndex = 1 | 2 | 3;
 type StepMap = Record<StepIndex, Record<CardIndex, number>>;
 
 export default function ProcessPage() {
-  const [headerRef, headerInView] = useInView({
-    threshold: 0.6,
-    triggerOnce: false,
-  });
-
-  const [stepsRef, stepsInView] = useInView({
-    threshold: 0.4,
-    triggerOnce: false,
-  });
-
-  const [weeksRef, weeksInView] = useInView({
-    threshold: 0.3,
+  const [processRef, processInView] = useInView({
+    threshold: 0.2,
     triggerOnce: false,
   });
 
   const { setActiveSection } = useScroll();
   // Use local state for processCardStep instead of context
   const [processCardStep, setProcessCardStep] = useState(0);
+  const [currentSection, setCurrentSection] = useState("intro");
 
+  // Track scroll position to determine which subsection is visible
   useEffect(() => {
-    if (headerInView) {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // Calculate which section should be active based on scroll position
+      if (scrollY < windowHeight * 0.5) {
+        setCurrentSection("intro");
+      } else if (scrollY < windowHeight * 1.5) {
+        setCurrentSection("steps");
+        // Start animating cards when steps section is visible
+        if (processCardStep === 0) {
+          setProcessCardStep(1);
+          setTimeout(() => setProcessCardStep(2), 1200);
+          setTimeout(() => setProcessCardStep(3), 2400);
+          setTimeout(() => setProcessCardStep(4), 3600);
+        }
+      } else {
+        setCurrentSection("weeks");
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [processCardStep]);
+
+  // Set active section for global navigation
+  useEffect(() => {
+    if (processInView) {
       const timer = setTimeout(() => {
         setActiveSection("process");
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [headerInView, setActiveSection]);
-
-  // Update process card step based on scroll position in steps section
-  useEffect(() => {
-    if (stepsInView) {
-      const stepsTimer = setTimeout(() => {
-        // Start animating cards once in view
-        setProcessCardStep(1);
-
-        // After initial animation, sequence through all steps
-        const step2Timer = setTimeout(() => setProcessCardStep(2), 800);
-        const step3Timer = setTimeout(() => setProcessCardStep(3), 1600);
-        const step4Timer = setTimeout(() => setProcessCardStep(4), 2400);
-
-        return () => {
-          clearTimeout(step2Timer);
-          clearTimeout(step3Timer);
-          clearTimeout(step4Timer);
-        };
-      }, 300);
-
-      return () => clearTimeout(stepsTimer);
-    } else {
-      // Reset when scrolled away
-      setProcessCardStep(0);
-    }
-  }, [stepsInView]);
+  }, [processInView, setActiveSection]);
 
   // Process cards data with proper typing
   const processCards: ProcessCardData[] = [
@@ -97,7 +90,7 @@ export default function ProcessPage() {
     },
   ];
 
-  // Get rotation angle for each card based on the current step
+  // Get rotation angle for each card based on the current step (exactly matching Figma specs)
   const getRotation = (cardId: number, currentStep: number) => {
     const rotationMap: StepMap = {
       0: { 1: -15, 2: -30, 3: -45 }, // Initial state
@@ -117,7 +110,7 @@ export default function ProcessPage() {
   // Get y-position for each card based on the current step
   const getYPosition = (cardId: number, currentStep: number) => {
     const yPositionMap: StepMap = {
-      0: { 1: 100, 2: 100, 3: 100 }, // Initial state
+      0: { 1: 100, 2: 100, 3: 100 }, // Initial state (off-screen)
       1: { 1: 0, 2: 30, 3: 60 }, // First card appears
       2: { 1: -30, 2: 0, 3: 30 }, // Second card appears
       3: { 1: -60, 2: -30, 3: 0 }, // Third card appears
@@ -137,8 +130,8 @@ export default function ProcessPage() {
       0: { 1: 0.8, 2: 0.5, 3: 0.2 }, // Initial state
       1: { 1: 1, 2: 0.7, 3: 0.3 }, // First card appears
       2: { 1: 0.7, 2: 1, 3: 0.7 }, // Second card appears
-      3: { 1: 0.5, 2: 0.7, 3: 1 }, // Third card appears
-      4: { 1: 0.3, 2: 0.5, 3: 0.8 }, // All cards shift up
+      3: { 1: 0.3, 2: 0.7, 3: 1 }, // Third card appears
+      4: { 1: 0.2, 2: 0.5, 3: 0.8 }, // All cards shift up
     };
 
     // Ensure we have valid indexes by using type assertions
@@ -149,25 +142,28 @@ export default function ProcessPage() {
   };
 
   return (
-    <div className="process-page-container">
-      {/* First Section: Process Introduction */}
-      <section
-        id="section-process"
-        ref={headerRef}
-        className="section-fullscreen snap-section min-h-screen flex items-center"
-      >
-        <BackgroundAnimation withBlur={true} />
+    <section
+      id="section-process"
+      ref={processRef}
+      className="section-fullscreen snap-section relative"
+      style={{ height: "300vh" }}
+    >
+      <BackgroundAnimation withBlur={true} />
 
+      {/* First Section: Process Introduction */}
+      <div
+        className="section-content absolute inset-0 h-screen flex items-center"
+        style={{
+          opacity: currentSection === "intro" ? 1 : 0.3,
+          transition: "opacity 0.5s ease",
+        }}
+      >
         <div className="max-w-7xl w-full px-6 md:px-10 mx-auto relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
             {/* Logo Section - Left Side (4 columns) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
-              animate={
-                headerInView
-                  ? { opacity: 1, scale: 1 }
-                  : { opacity: 0, scale: 0.9 }
-              }
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6 }}
               className="md:col-span-4 flex justify-center md:justify-start"
             >
@@ -196,16 +192,14 @@ export default function ProcessPage() {
             <motion.div
               variants={staggerChildren}
               initial="hidden"
-              animate={headerInView ? "visible" : "hidden"}
+              animate="visible"
               className="md:col-span-8 flex flex-col"
             >
               {/* "Our Process" label positioned at the top of the content column */}
               <motion.div
                 className="flex items-center mb-16"
                 initial={{ opacity: 0, y: 20 }}
-                animate={
-                  headerInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
-                }
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
                 <div className="w-8 h-px bg-white/70 mr-2"></div>
@@ -230,34 +224,60 @@ export default function ProcessPage() {
             </motion.div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Second Section: Process Cards */}
-      <section
-        id="section-process-steps"
-        ref={stepsRef}
-        className="section-fullscreen snap-section gradient-bg relative"
+      {/* Second Section: Process Cards - Implemented according to Figma specs */}
+      <div
+        className="section-content absolute inset-0 top-screen h-screen flex items-center justify-center"
+        style={{
+          opacity: currentSection === "steps" ? 1 : 0.3,
+          transition: "opacity 0.5s ease",
+        }}
       >
-        <BackgroundAnimation />
-
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-2xl absolute left-6 top-1/2 transform -translate-y-1/2">
-            {processCardStep >= 1 && <div className="mb-20">01.</div>}
-            {processCardStep >= 2 && <div className="mb-20">02.</div>}
-            {processCardStep >= 3 && <div>03.</div>}
+        <div className="w-full h-full flex items-center justify-center relative">
+          {/* Step indicators on the left */}
+          <div className="absolute left-16 md:left-24 top-1/2 transform -translate-y-1/2 text-2xl md:text-3xl font-bold">
+            {processCardStep >= 1 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="mb-24 md:mb-32"
+              >
+                01.
+              </motion.div>
+            )}
+            {processCardStep >= 2 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="mb-24 md:mb-32"
+              >
+                02.
+              </motion.div>
+            )}
+            {processCardStep >= 3 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                03.
+              </motion.div>
+            )}
           </div>
 
-          <div className="relative h-96 w-64">
+          {/* Center cards - Implementing exact Figma specs */}
+          <div className="relative h-96 w-full max-w-xl flex items-center justify-center">
             {processCards.map((card) => (
               <motion.div
                 key={card.step}
-                className="absolute w-64 h-64 backdrop-blur-md rounded-xl flex flex-col justify-center items-center text-center p-6"
+                className="absolute"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderRadius: "16px",
-                  boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1)",
-                  backdropFilter: "blur(10px)",
-                  zIndex: card.step,
+                  width: "432px",
+                  height: "423px",
+                  zIndex: 10 - card.step,
                 }}
                 initial={{
                   y: 100,
@@ -272,39 +292,55 @@ export default function ProcessPage() {
                   x: 0,
                 }}
                 transition={{
-                  duration: 0.6,
+                  duration: 0.8,
                   ease: [0.22, 1, 0.36, 1],
                 }}
               >
-                <h3 className="text-xl font-bold mb-3">{card.title}</h3>
-                <p className="text-sm">{card.description}</p>
+                <div
+                  className="w-full h-full flex flex-col justify-center items-center text-center rounded-[40px]"
+                  style={{
+                    padding: "91px 48px",
+                    backgroundColor: "rgba(245, 245, 247, 0.1)",
+                    border: "1.5px solid",
+                    borderImageSource:
+                      "linear-gradient(180deg, rgba(245, 245, 247, 0.7) 0%, rgba(255, 255, 255, 0.2) 100%)",
+                    backdropFilter: "blur(100px)",
+                    boxShadow:
+                      "0px 0px 20px 0px rgba(255, 255, 255, 0.4) inset",
+                  }}
+                >
+                  <h3 className="text-2xl md:text-3xl font-bold mb-6">
+                    {card.title}
+                  </h3>
+                  <p className="text-base md:text-lg text-white/80">
+                    {card.description}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Third Section: All in Weeks */}
-      <section
-        id="section-all-in-weeks"
-        ref={weeksRef}
-        className="section-fullscreen snap-section gradient-bg"
+      {/* Third Section: All in Weeks - Updated to match Figma */}
+      <div
+        className="section-content absolute inset-0 top-2/3 h-screen flex items-center justify-center"
+        style={{
+          opacity: currentSection === "weeks" ? 1 : 0.3,
+          transition: "opacity 0.5s ease",
+        }}
       >
         <div className="w-full h-full flex items-center justify-center">
           <motion.h2
-            className="text-5xl md:text-7xl font-bold"
+            className="text-5xl md:text-7xl lg:text-8xl font-bold"
             initial={{ opacity: 0, scale: 0.9 }}
-            animate={
-              weeksInView
-                ? { opacity: 1, scale: 1 }
-                : { opacity: 0, scale: 0.9 }
-            }
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
           >
-            All in <span className="text-accent-green">Weeks!</span>
+            All in <span className="text-[#b0ff00]">Weeks!</span>
           </motion.h2>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
