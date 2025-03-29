@@ -68,7 +68,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       {/* Logo */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <Image
-          src="/images/logo.svg"
+          src="/logo.png"
           alt="Build Logo"
           width={240}
           height={60}
