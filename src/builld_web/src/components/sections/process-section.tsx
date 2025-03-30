@@ -4,6 +4,7 @@ import { useInView } from "react-intersection-observer";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import BackgroundAnimation from "../ui/background-animation";
 
 // Animation variants
 const fadeUpVariant = {
@@ -64,39 +65,10 @@ export default function ProcessSection() {
     console.log(`Setting active section to: ${sectionName}`);
   }, []);
 
-  const [currentSection, setCurrentSection] = useState("intro");
   const [processCardStep, setProcessCardStep] = useState(0);
   const [showFinalHeading, setShowFinalHeading] = useState(false);
 
-  // Handle scroll to determine active section
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-
-      // Calculate section visibility based on scroll position
-      if (scrollY < windowHeight * 0.5) {
-        setCurrentSection("intro");
-      } else if (scrollY < windowHeight * 1.5) {
-        setCurrentSection("steps");
-        // Start card animation sequence when steps section becomes visible
-        if (processCardStep === 0) {
-          setProcessCardStep(1);
-          setTimeout(() => setProcessCardStep(2), 1000);
-          setTimeout(() => setProcessCardStep(3), 2000);
-          setTimeout(() => setProcessCardStep(4), 3000);
-        }
-      } else {
-        setCurrentSection("weeks");
-        setShowFinalHeading(true);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [processCardStep]);
-
-  // Set active section for global navigation
+  // Set active section for global navigation when the section is in view
   useEffect(() => {
     if (processInView) {
       const timer = setTimeout(() => {
@@ -105,6 +77,39 @@ export default function ProcessSection() {
       return () => clearTimeout(timer);
     }
   }, [processInView, setActiveSection]);
+
+  // Initialize card animations when steps section becomes visible
+  const [stepsRef, stepsInView] = useInView({
+    threshold: 0.3,
+    triggerOnce: true,
+  });
+
+  useEffect(() => {
+    if (stepsInView && processCardStep === 0) {
+      setProcessCardStep(1);
+      const step2 = setTimeout(() => setProcessCardStep(2), 1000);
+      const step3 = setTimeout(() => setProcessCardStep(3), 2000);
+      const step4 = setTimeout(() => setProcessCardStep(4), 3000);
+
+      return () => {
+        clearTimeout(step2);
+        clearTimeout(step3);
+        clearTimeout(step4);
+      };
+    }
+  }, [stepsInView, processCardStep]);
+
+  // Handle final heading visibility
+  const [weeksRef, weeksInView] = useInView({
+    threshold: 0.5,
+    triggerOnce: true,
+  });
+
+  useEffect(() => {
+    if (weeksInView) {
+      setShowFinalHeading(true);
+    }
+  }, [weeksInView]);
 
   // Helper functions for card animations with proper typing
   const getRotation = (cardId: number, currentStep: number): number => {
@@ -152,26 +157,20 @@ export default function ProcessSection() {
     return opacityMap[safeStep][safeCardId];
   };
 
-  // Section visibility configuration
-  const isIntroActive = currentSection === "intro";
-  const isStepsActive = currentSection === "steps";
-  const isWeeksActive = currentSection === "weeks";
-
   return (
-    <section
-      id="section-process"
-      ref={processRef}
-      className="section-fullscreen snap-section relative min-h-screen"
-    >
-      {/* Background with blur effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-gray-900/80 backdrop-blur-xl"></div>
+    <div className="relative w-full">
+      {/* Background Animation - placed before content but with lower z-index */}
+      <div className="fixed inset-0 z-0">
+        <BackgroundAnimation withBlur={true} />
+      </div>
 
       {/* Intro Section */}
-      <div
-        className="absolute inset-0 h-screen flex items-center transition-opacity duration-500"
-        style={{ opacity: isIntroActive ? 1 : 0.5 }}
+      <section
+        ref={processRef}
+        id="section-process"
+        className="relative section-fullscreen snap-section min-h-screen w-full flex items-center"
       >
-        <div className="max-w-7xl w-full px-6 md:px-10 mx-auto relative z-10">
+        <div className="max-w-7xl w-full px-6 md:px-10 mx-auto py-16">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
             {/* Logo Section - Left Side */}
             <motion.div
@@ -205,7 +204,8 @@ export default function ProcessSection() {
             <motion.div
               variants={staggerChildren}
               initial="hidden"
-              animate="visible"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
               className="md:col-span-8 flex flex-col"
             >
               <motion.div
@@ -234,19 +234,17 @@ export default function ProcessSection() {
             </motion.div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Steps & Final Section */}
-      <div
-        className="absolute inset-0 top-screen h-screen flex items-center justify-center transition-opacity duration-500"
-        style={{ opacity: isStepsActive || isWeeksActive ? 1 : 0.5 }}
+      {/* Steps Section */}
+      <section
+        ref={stepsRef}
+        id="section-process"
+        className="relative section-fullscreen snap-section min-h-screen w-full flex items-center"
       >
-        <div className="w-full h-full flex items-center justify-center relative">
+        <div className="w-full h-full flex items-center justify-center relative py-24">
           {/* Step indicators on the left */}
-          <div
-            className="absolute left-16 md:left-24 top-1/2 transform -translate-y-1/2 text-2xl md:text-3xl font-bold transition-opacity duration-500"
-            style={{ opacity: isStepsActive ? 1 : 0.5 }}
-          >
+          <div className="absolute left-16 md:left-24 top-1/2 transform -translate-y-1/2 text-2xl md:text-3xl font-bold">
             {processCardStep >= 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -279,10 +277,7 @@ export default function ProcessSection() {
           </div>
 
           {/* Center cards */}
-          <div
-            className="relative h-96 w-full max-w-xl flex items-center justify-center transition-opacity duration-500"
-            style={{ opacity: isStepsActive ? 1 : 0.5 }}
-          >
+          <div className="relative h-96 w-full max-w-xl flex items-center justify-center">
             {processCards.map((card) => (
               <motion.div
                 key={card.step}
@@ -330,24 +325,28 @@ export default function ProcessSection() {
               </motion.div>
             ))}
           </div>
-
-          {/* "All in Weeks" heading overlay */}
-          <motion.div
-            className="absolute inset-0 w-full h-full flex items-center justify-center"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{
-              opacity: showFinalHeading ? 1 : 0,
-              scale: showFinalHeading ? 1 : 0.9,
-            }}
-            transition={{ duration: 0.8 }}
-            style={{ zIndex: 20 }}
-          >
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold">
-              All in <span className="text-[#b0ff00]">Weeks!</span>
-            </h2>
-          </motion.div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Final "All in Weeks" Section */}
+      <section
+        id="section-process"
+        ref={weeksRef}
+        className="relative section-fullscreen snap-section min-h-screen w-full flex items-center justify-center"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{
+            opacity: showFinalHeading ? 1 : 0,
+            scale: showFinalHeading ? 1 : 0.9,
+          }}
+          transition={{ duration: 0.8 }}
+        >
+          <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold">
+            All in <span className="text-[#b0ff00]">Weeks!</span>
+          </h2>
+        </motion.div>
+      </section>
+    </div>
   );
 }
