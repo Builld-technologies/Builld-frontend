@@ -15,6 +15,7 @@ export type SectionType =
   | "hero"
   | "about"
   | "process"
+  | "process-steps"
   | "services"
   | "contact";
 
@@ -99,6 +100,7 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
         "hero",
         "about",
         "process",
+        "process-steps",
         "services",
         "contact",
       ];

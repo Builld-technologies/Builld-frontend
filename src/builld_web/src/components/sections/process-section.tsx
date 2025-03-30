@@ -1,10 +1,11 @@
 "use client";
 
 import { useInView } from "react-intersection-observer";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import BackgroundAnimation from "../ui/background-animation";
+import { useScroll } from "@/context/scroll-context";
 
 // Animation variants
 const fadeUpVariant = {
@@ -49,67 +50,73 @@ const processCards: ProcessCard[] = [
 ];
 
 // Type definitions for animation maps
-type StepIndex = 0 | 1 | 2 | 3 | 4;
+type StepIndex = 0 | 1 | 2 | 3 | 4 | 5;
 type CardIndex = 1 | 2 | 3;
 type AnimationMap = Record<StepIndex, Record<CardIndex, number>>;
 
 export default function ProcessSection() {
-  const [processRef, processInView] = useInView({
-    threshold: 0.2,
+  const [processCardStep, setProcessCardStep] = useState(0);
+  const [showFinalHeading, setShowFinalHeading] = useState(false);
+  const { setActiveSection } = useScroll();
+
+  // Main section ref for navigation - increased threshold for better detection
+  const [mainSectionRef, mainSectionInView] = useInView({
+    threshold: 0.3,
     triggerOnce: false,
   });
 
-  // Using useCallback to memoize the setActiveSection function
-  const setActiveSection = useCallback((sectionName: string) => {
-    // This is a placeholder - replace with your actual implementation
-    console.log(`Setting active section to: ${sectionName}`);
-  }, []);
-
-  const [processCardStep, setProcessCardStep] = useState(0);
-  const [showFinalHeading, setShowFinalHeading] = useState(false);
-
-  // Set active section for global navigation when the section is in view
-  useEffect(() => {
-    if (processInView) {
-      const timer = setTimeout(() => {
-        setActiveSection("process");
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [processInView, setActiveSection]);
-
-  // Initialize card animations when steps section becomes visible
+  // Steps section with progressive animations
   const [stepsRef, stepsInView] = useInView({
-    threshold: 0.3,
-    triggerOnce: true,
+    threshold: 0.5,
+    triggerOnce: false,
   });
 
+  // Set active section based on which part is more in view
   useEffect(() => {
-    if (stepsInView && processCardStep === 0) {
-      setProcessCardStep(1);
-      const step2 = setTimeout(() => setProcessCardStep(2), 1000);
-      const step3 = setTimeout(() => setProcessCardStep(3), 2000);
-      const step4 = setTimeout(() => setProcessCardStep(4), 3000);
+    // Short debounce to prevent rapid switching
+    const timer = setTimeout(() => {
+      if (mainSectionInView && !stepsInView) {
+        setActiveSection("process");
+      } else if (stepsInView) {
+        setActiveSection("process-steps");
+      }
+    }, 100);
 
-      return () => {
-        clearTimeout(step2);
-        clearTimeout(step3);
-        clearTimeout(step4);
-      };
+    return () => clearTimeout(timer);
+  }, [mainSectionInView, stepsInView, setActiveSection]);
+
+  // Handle card animations based on scroll and visibility
+  useEffect(() => {
+    if (stepsInView) {
+      if (processCardStep === 0) {
+        // Initial sequence for steps with appropriate timing
+        const step1 = setTimeout(() => setProcessCardStep(1), 300);
+        const step2 = setTimeout(() => setProcessCardStep(2), 1300);
+        const step3 = setTimeout(() => setProcessCardStep(3), 2300);
+        // Final reveal
+        const step4 = setTimeout(() => {
+          setProcessCardStep(4);
+          setTimeout(() => {
+            setProcessCardStep(5);
+            setShowFinalHeading(true);
+          }, 800);
+        }, 3300);
+
+        return () => {
+          clearTimeout(step1);
+          clearTimeout(step2);
+          clearTimeout(step3);
+          clearTimeout(step4);
+        };
+      }
+    } else {
+      // Reset animations when out of view for better UX on re-scroll
+      if (processCardStep >= 4) {
+        setProcessCardStep(3);
+        setShowFinalHeading(false);
+      }
     }
   }, [stepsInView, processCardStep]);
-
-  // Handle final heading visibility
-  const [weeksRef, weeksInView] = useInView({
-    threshold: 0.5,
-    triggerOnce: true,
-  });
-
-  useEffect(() => {
-    if (weeksInView) {
-      setShowFinalHeading(true);
-    }
-  }, [weeksInView]);
 
   // Helper functions for card animations with proper typing
   const getRotation = (cardId: number, currentStep: number): number => {
@@ -118,10 +125,11 @@ export default function ProcessSection() {
       1: { 1: 0, 2: -15, 3: -30 }, // First card appears
       2: { 1: -15, 2: 0, 3: -15 }, // Second card appears
       3: { 1: -30, 2: -15, 3: 0 }, // Third card appears
-      4: { 1: -45, 2: -30, 3: -15 }, // All cards shift up
+      4: { 1: -45, 2: -30, 3: -15 }, // Cards shift up for final heading
+      5: { 1: -55, 2: -40, 3: -25 }, // Cards shift up more for final heading
     };
 
-    const safeStep = Math.min(4, Math.max(0, currentStep)) as StepIndex;
+    const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
     const safeCardId = Math.min(3, Math.max(1, cardId)) as CardIndex;
 
     return rotationMap[safeStep][safeCardId];
@@ -133,10 +141,11 @@ export default function ProcessSection() {
       1: { 1: 0, 2: 30, 3: 60 }, // First card appears
       2: { 1: -30, 2: 0, 3: 30 }, // Second card appears
       3: { 1: -60, 2: -30, 3: 0 }, // Third card appears
-      4: { 1: -90, 2: -60, 3: -30 }, // All cards shift up
+      4: { 1: -100, 2: -70, 3: -40 }, // Cards shift up for final heading
+      5: { 1: -140, 2: -110, 3: -80 }, // Cards shift up more to make room
     };
 
-    const safeStep = Math.min(4, Math.max(0, currentStep)) as StepIndex;
+    const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
     const safeCardId = Math.min(3, Math.max(1, cardId)) as CardIndex;
 
     return yPositionMap[safeStep][safeCardId];
@@ -149,28 +158,26 @@ export default function ProcessSection() {
       2: { 1: 0.7, 2: 1, 3: 0.7 }, // Second card appears
       3: { 1: 0.3, 2: 0.7, 3: 1 }, // Third card appears
       4: { 1: 0.2, 2: 0.5, 3: 0.8 }, // All cards shift up
+      5: { 1: 0.1, 2: 0.3, 3: 0.6 }, // Cards fade more for final heading
     };
 
-    const safeStep = Math.min(4, Math.max(0, currentStep)) as StepIndex;
+    const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
     const safeCardId = Math.min(3, Math.max(1, cardId)) as CardIndex;
 
     return opacityMap[safeStep][safeCardId];
   };
 
   return (
-    <div className="relative w-full">
-      {/* Background Animation - placed before content but with lower z-index */}
-      <div className="fixed inset-0 z-0">
-        <BackgroundAnimation withBlur={true} />
-      </div>
-
+    <>
       {/* Intro Section */}
       <section
-        ref={processRef}
+        ref={mainSectionRef}
         id="section-process"
         className="relative section-fullscreen snap-section min-h-screen w-full flex items-center"
       >
-        <div className="max-w-7xl w-full px-6 md:px-10 mx-auto py-16">
+        {/* Background Animation */}
+        <BackgroundAnimation withBlur={true} />
+        <div className="max-w-7xl z-10 w-full px-6 md:px-10 mx-auto py-16">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
             {/* Logo Section - Left Side */}
             <motion.div
@@ -236,15 +243,17 @@ export default function ProcessSection() {
         </div>
       </section>
 
-      {/* Steps Section */}
+      {/* Combined Steps and Final Section */}
       <section
         ref={stepsRef}
-        id="section-process"
-        className="relative section-fullscreen snap-section min-h-screen w-full flex items-center"
+        id="section-process-steps"
+        className="relative z-10 section-fullscreen snap-section min-h-screen w-full flex items-center justify-center"
       >
-        <div className="w-full h-full flex items-center justify-center relative py-24">
+        {/* Background Animation */}
+        <BackgroundAnimation withBlur={true} />
+        <div className="w-full h-full flex flex-col items-center justify-center relative py-24">
           {/* Step indicators on the left */}
-          <div className="absolute left-16 md:left-24 top-1/2 transform -translate-y-1/2 text-2xl md:text-3xl font-bold">
+          <div className="absolute left-8 md:left-24 top-1/2 transform -translate-y-1/2 text-2xl md:text-3xl font-bold z-10">
             {processCardStep >= 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -325,28 +334,24 @@ export default function ProcessSection() {
               </motion.div>
             ))}
           </div>
+
+          {/* Final "All in Weeks" heading - now integrated in the same section */}
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{
+              opacity: showFinalHeading ? 1 : 0,
+              y: showFinalHeading ? 0 : 40,
+              scale: showFinalHeading ? 1 : 0.95,
+            }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mt-48 z-20"
+          >
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold">
+              All in <span className="text-[#b0ff00]">Weeks!</span>
+            </h2>
+          </motion.div>
         </div>
       </section>
-
-      {/* Final "All in Weeks" Section */}
-      <section
-        id="section-process"
-        ref={weeksRef}
-        className="relative section-fullscreen snap-section min-h-screen w-full flex items-center justify-center"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{
-            opacity: showFinalHeading ? 1 : 0,
-            scale: showFinalHeading ? 1 : 0.9,
-          }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold">
-            All in <span className="text-[#b0ff00]">Weeks!</span>
-          </h2>
-        </motion.div>
-      </section>
-    </div>
+    </>
   );
 }
