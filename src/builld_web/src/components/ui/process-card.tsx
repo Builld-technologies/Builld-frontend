@@ -1,40 +1,62 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { getProcessCardVariants } from "@/animations/process-cards-animation";
 
 interface ProcessCardProps {
   title: string;
   description: string;
-  step: 1 | 2 | 3;
-  index: number;
-  currentStep: number;
+  step: number;
+  rotation: number;
+  yPosition: number;
+  opacity: number;
 }
 
 export default function ProcessCard({
   title,
   description,
   step,
-  currentStep,
+  rotation,
+  yPosition,
+  opacity,
 }: ProcessCardProps) {
-  const variants = getProcessCardVariants(currentStep, step);
-
   return (
     <motion.div
-      className="absolute w-64 h-64 bg-black/20 backdrop-blur-md rounded-xl flex flex-col justify-center items-center text-center p-6"
-      variants={variants}
-      initial="initial"
-      animate="animate"
+      className="absolute"
       style={{
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        marginLeft: "-8rem",
-        marginTop: "-8rem",
+        width: "432px",
+        height: "423px",
+        zIndex: 10 - step,
+      }}
+      initial={{
+        y: 100,
+        opacity: 0.2,
+        rotate: -45,
+        x: 0,
+      }}
+      animate={{
+        y: yPosition,
+        opacity: opacity,
+        rotate: rotation,
+        x: 0,
+      }}
+      transition={{
+        duration: 0.8,
+        ease: [0.22, 1, 0.36, 1],
       }}
     >
-      <h3 className="text-2xl font-bold mb-2">{title}</h3>
-      <p className="text-sm leading-relaxed">{description}</p>
+      <div
+        className="w-full h-full flex flex-col justify-center items-center text-center rounded-[40px]"
+        style={{
+          padding: "91px 48px",
+          backgroundColor: "rgba(245, 245, 247, 0.1)",
+          border: "1.5px solid rgba(245, 245, 247, 0.4)",
+          backdropFilter: "blur(100px)",
+          boxShadow: "0px 0px 20px 0px rgba(255, 255, 255, 0.4) inset",
+        }}
+      >
+        <h3 className="text-2xl md:text-3xl font-bold mb-6">{title}</h3>
+        <p className="text-base md:text-lg text-white/80">{description}</p>
+      </div>
     </motion.div>
   );
 }
