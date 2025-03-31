@@ -59,7 +59,7 @@ export default function ProcessSection() {
   const [showFinalHeading, setShowFinalHeading] = useState(false);
   const { setActiveSection } = useScroll();
 
-  // Main section ref for navigation - increased threshold for better detection
+  // Main section ref for navigation
   const [mainSectionRef, mainSectionInView] = useInView({
     threshold: 0.3,
     triggerOnce: false,
@@ -71,9 +71,8 @@ export default function ProcessSection() {
     triggerOnce: false,
   });
 
-  // Set active section based on which part is more in view
+  // Set active section based on which part is in view
   useEffect(() => {
-    // Short debounce to prevent rapid switching
     const timer = setTimeout(() => {
       if (mainSectionInView && !stepsInView) {
         setActiveSection("process");
@@ -88,14 +87,16 @@ export default function ProcessSection() {
   // Handle card animations based on scroll and visibility
   useEffect(() => {
     if (stepsInView) {
+      // Start animation sequence only if we're at the beginning
       if (processCardStep === 0) {
-        // Initial sequence for steps with appropriate timing
+        // Animation sequence timing matches the images
         const step1 = setTimeout(() => setProcessCardStep(1), 300);
         const step2 = setTimeout(() => setProcessCardStep(2), 1300);
         const step3 = setTimeout(() => setProcessCardStep(3), 2300);
-        // Final reveal
+        // Move cards up to make room for final heading
         const step4 = setTimeout(() => {
           setProcessCardStep(4);
+          // Final text reveal with proper delay
           setTimeout(() => {
             setProcessCardStep(5);
             setShowFinalHeading(true);
@@ -111,22 +112,23 @@ export default function ProcessSection() {
       }
     } else {
       // Reset animations when out of view for better UX on re-scroll
-      if (processCardStep >= 4) {
-        setProcessCardStep(3);
+      if (processCardStep > 0) {
+        setProcessCardStep(0);
         setShowFinalHeading(false);
       }
     }
   }, [stepsInView, processCardStep]);
 
-  // Helper functions for card animations with proper typing
+  // Helper functions for card animations with exact rotation values from images
   const getRotation = (cardId: number, currentStep: number): number => {
+    // Rotation values exactly matching provided images
     const rotationMap: AnimationMap = {
-      0: { 1: -15, 2: -30, 3: -45 }, // Initial state
-      1: { 1: 0, 2: -15, 3: -30 }, // First card appears
-      2: { 1: -15, 2: 0, 3: -15 }, // Second card appears
-      3: { 1: -30, 2: -15, 3: 0 }, // Third card appears
-      4: { 1: -45, 2: -30, 3: -15 }, // Cards shift up for final heading
-      5: { 1: -55, 2: -40, 3: -25 }, // Cards shift up more for final heading
+      0: { 1: -15, 2: -30, 3: -45 }, // Initial state (-15°, -30°, -45°)
+      1: { 1: 0, 2: -15, 3: -30 }, // First card appears (0°, -15°, -30°)
+      2: { 1: -15, 2: 0, 3: -15 }, // Second card appears (-15°, 0°, -15°)
+      3: { 1: -30, 2: -15, 3: 0 }, // Third card appears (-30°, -15°, 0°)
+      4: { 1: -45, 2: -30, 3: -15 }, // Cards shift up (-45°, -30°, -15°)
+      5: { 1: -55, 2: -40, 3: -25 }, // Final positions (-55°, -40°, -25°)
     };
 
     const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
@@ -136,13 +138,14 @@ export default function ProcessSection() {
   };
 
   const getYPosition = (cardId: number, currentStep: number): number => {
+    // Y position values to match the visual flow in images
     const yPositionMap: AnimationMap = {
-      0: { 1: 100, 2: 100, 3: 100 }, // Initial state (off-screen)
+      0: { 1: 100, 2: 100, 3: 100 }, // Initial state (all cards off-screen)
       1: { 1: 0, 2: 30, 3: 60 }, // First card appears
       2: { 1: -30, 2: 0, 3: 30 }, // Second card appears
       3: { 1: -60, 2: -30, 3: 0 }, // Third card appears
       4: { 1: -100, 2: -70, 3: -40 }, // Cards shift up for final heading
-      5: { 1: -140, 2: -110, 3: -80 }, // Cards shift up more to make room
+      5: { 1: -140, 2: -110, 3: -80 }, // Cards shift up more for final text
     };
 
     const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
@@ -152,13 +155,14 @@ export default function ProcessSection() {
   };
 
   const getOpacity = (cardId: number, currentStep: number): number => {
+    // Opacity values to match the visual flow in images
     const opacityMap: AnimationMap = {
       0: { 1: 0.8, 2: 0.5, 3: 0.2 }, // Initial state
       1: { 1: 1, 2: 0.7, 3: 0.3 }, // First card appears
       2: { 1: 0.7, 2: 1, 3: 0.7 }, // Second card appears
       3: { 1: 0.3, 2: 0.7, 3: 1 }, // Third card appears
       4: { 1: 0.2, 2: 0.5, 3: 0.8 }, // All cards shift up
-      5: { 1: 0.1, 2: 0.3, 3: 0.6 }, // Cards fade more for final heading
+      5: { 1: 0.1, 2: 0.3, 3: 0.6 }, // Cards fade for final heading
     };
 
     const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
@@ -335,7 +339,7 @@ export default function ProcessSection() {
             ))}
           </div>
 
-          {/* Final "All in Weeks" heading - now integrated in the same section */}
+          {/* Final "All in Weeks" heading */}
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{

@@ -25,12 +25,11 @@ export default function PageIndicator() {
   }, [activeSection]);
 
   // Define sections to display in the indicator
-  // Note: We're not showing 'splash' in the navigation dots
+  // Removed 'process-steps' as it will now share the 'process' indicator
   const sections: SectionType[] = [
     "hero",
     "about",
     "process",
-    "process-steps",
     "services",
     "contact",
   ];
@@ -39,11 +38,19 @@ export default function PageIndicator() {
     hero: "Home",
     about: "About",
     process: "Process",
-    "process-steps": "Steps",
+    "process-steps": "Process", // Changed label to match 'process'
     services: "Services",
     contact: "Contact",
-    splash: "Splash", // Included for type safety but not used in UI
+    splash: "Splash",
   };
+
+  // Map process-steps to process for indicator display
+  const getNormalizedSection = (section: SectionType): SectionType => {
+    return section === "process-steps" ? "process" : section;
+  };
+
+  // Get the display section based on the current active section
+  const normalizedActiveSection = getNormalizedSection(stableSection);
 
   return (
     <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col space-y-6">
@@ -58,7 +65,7 @@ export default function PageIndicator() {
           aria-label={`Go to ${labels[section]} section`}
         >
           {/* Active ring animation */}
-          {stableSection === section && (
+          {normalizedActiveSection === section && (
             <motion.div
               className="w-5 h-5 rounded-full border border-white absolute"
               initial={{ scale: 0 }}
@@ -71,8 +78,8 @@ export default function PageIndicator() {
           <motion.div
             className="w-2 h-2 rounded-full bg-white"
             animate={{
-              scale: stableSection === section ? 1 : 0.8,
-              opacity: stableSection === section ? 1 : 0.6,
+              scale: normalizedActiveSection === section ? 1 : 0.8,
+              opacity: normalizedActiveSection === section ? 1 : 0.6,
             }}
             transition={{ type: "spring", damping: 15 }}
           />
