@@ -8,6 +8,7 @@ export default function PageIndicator() {
   const { activeSection, scrollToSection } = useScroll();
   const [stableSection, setStableSection] =
     useState<SectionType>(activeSection);
+  const [isVisible, setIsVisible] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update stable section with debounce to prevent flickering during fast scrolling
@@ -24,13 +25,27 @@ export default function PageIndicator() {
     };
   }, [activeSection]);
 
+  // Handle screen size changes
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsVisible(window.innerWidth >= 768); // Hide on screens smaller than md breakpoint
+    };
+
+    // Check on initial load
+    checkScreenSize();
+
+    // Add listener for screen size changes
+    window.addEventListener("resize", checkScreenSize);
+
+    // Clean up
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
   // Define sections to display in the indicator
-  // Note: We're not showing 'splash' in the navigation dots
   const sections: SectionType[] = [
     "hero",
     "about",
     "process",
-    "process-steps",
     "services",
     "contact",
   ];
@@ -39,14 +54,32 @@ export default function PageIndicator() {
     hero: "Home",
     about: "About",
     process: "Process",
-    "process-steps": "Steps",
+    "process-steps": "Process",
     services: "Services",
     contact: "Contact",
-    splash: "Splash", // Included for type safety but not used in UI
+    splash: "Splash",
   };
 
+  // Map process-steps to process for indicator display
+  const getNormalizedSection = (section: SectionType): SectionType => {
+    return section === "process-steps" ? "process" : section;
+  };
+
+  // Get the display section based on the current active section
+  const normalizedActiveSection = getNormalizedSection(stableSection);
+
+  // If not visible (small screens), return null
+  if (!isVisible) {
+    return null;
+  }
+
   return (
-    <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col space-y-6">
+    <motion.div
+      className="fixed right-4 lg:right-6 top-1/2 -translate-y-1/2 z-50 flex-col space-y-4 lg:space-y-6 hidden md:flex"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+    >
       {sections.map((section) => (
         <button
           key={section}
@@ -54,13 +87,13 @@ export default function PageIndicator() {
             setStableSection(section); // Update immediately for responsive UI
             scrollToSection(section);
           }}
-          className="w-6 h-6 relative flex items-center justify-center group"
+          className="w-5 h-5 lg:w-6 lg:h-6 relative flex items-center justify-center group"
           aria-label={`Go to ${labels[section]} section`}
         >
           {/* Active ring animation */}
-          {stableSection === section && (
+          {normalizedActiveSection === section && (
             <motion.div
-              className="w-5 h-5 rounded-full border border-white absolute"
+              className="w-4 h-4 lg:w-5 lg:h-5 rounded-full border border-white absolute"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", damping: 20 }}
@@ -69,20 +102,20 @@ export default function PageIndicator() {
 
           {/* Dot with dynamic scaling */}
           <motion.div
-            className="w-2 h-2 rounded-full bg-white"
+            className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-white"
             animate={{
-              scale: stableSection === section ? 1 : 0.8,
-              opacity: stableSection === section ? 1 : 0.6,
+              scale: normalizedActiveSection === section ? 1 : 0.8,
+              opacity: normalizedActiveSection === section ? 1 : 0.6,
             }}
             transition={{ type: "spring", damping: 15 }}
           />
 
           {/* Tooltip that appears on hover */}
-          <div className="opacity-0 group-hover:opacity-100 absolute right-8 whitespace-nowrap bg-black/70 px-2 py-1 rounded text-xs transition-opacity duration-200">
+          <div className="opacity-0 group-hover:opacity-100 absolute right-8 whitespace-nowrap bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-xs transition-opacity duration-200 pointer-events-none">
             {labels[section]}
           </div>
         </button>
       ))}
-    </div>
+    </motion.div>
   );
 }

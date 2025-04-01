@@ -99,3 +99,7 @@ html {
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
+
+.scroll-lock {
+  overscroll-behavior: none; /* Prevent browser default scroll behavior */
+}

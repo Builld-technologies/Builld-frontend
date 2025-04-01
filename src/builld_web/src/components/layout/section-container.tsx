@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
@@ -8,8 +8,11 @@ interface SectionContainerProps {
   id: string;
   children: ReactNode;
   className?: string;
-  bgColor?: "gradient" | "blue";
+  bgColor?: "gradient" | "blue" | "dark" | "transparent";
   fullWidth?: boolean;
+  minHeight?: "screen" | "auto" | string;
+  padding?: string;
+  viewThreshold?: number;
 }
 
 export default function SectionContainer({
@@ -18,15 +21,45 @@ export default function SectionContainer({
   className = "",
   bgColor = "gradient",
   fullWidth = false,
+  minHeight = "screen",
+  padding = "px-6 py-16 md:px-10",
+  viewThreshold = 0.1,
 }: SectionContainerProps) {
   const [ref, inView] = useInView({
-    threshold: 0.1,
+    threshold: viewThreshold,
     triggerOnce: false,
   });
 
-  const baseClasses =
-    "h-screen w-full flex flex-col items-center justify-center section-fullscreen snap-section relative overflow-hidden";
-  const bgClasses = bgColor === "blue" ? "bg-accent-blue" : "gradient-bg";
+  const [height, setHeight] = useState<string>("h-screen");
+
+  useEffect(() => {
+    // Handle responsive height settings
+    if (minHeight === "screen") {
+      setHeight("min-h-screen");
+    } else if (minHeight === "auto") {
+      setHeight("min-h-0");
+    } else {
+      setHeight(`min-h-[${minHeight}]`);
+    }
+  }, [minHeight]);
+
+  // Generate background classes
+  const getBgClass = () => {
+    switch (bgColor) {
+      case "blue":
+        return "bg-accent-blue";
+      case "dark":
+        return "bg-zinc-900";
+      case "transparent":
+        return "bg-transparent";
+      case "gradient":
+      default:
+        return "gradient-bg";
+    }
+  };
+
+  const baseClasses = `${height} w-full flex flex-col items-center justify-center section-fullscreen snap-section relative overflow-hidden ${padding}`;
+  const bgClasses = getBgClass();
 
   return (
     <section
@@ -36,7 +69,7 @@ export default function SectionContainer({
     >
       <div
         className={`${
-          fullWidth ? "w-full h-full" : "max-w-7xl w-full px-6 md:px-10"
+          fullWidth ? "w-full h-full" : "max-w-7xl w-full"
         } relative z-10`}
       >
         <motion.div
