@@ -57,7 +57,7 @@ const CARD_CONFIG = {
 
     // Tablet base values (768px - 1023px)
     TABLET: {
-      y: -400,
+      y: -480,
       x: 45,
       rotate: 15,
       opacity: 0.7,
@@ -66,7 +66,7 @@ const CARD_CONFIG = {
 
     // Mobile base values (< 768px)
     MOBILE: {
-      y: -300,
+      y: -400,
       x: 30,
       rotate: 15,
       opacity: 0.7,
@@ -82,7 +82,7 @@ const CARD_CONFIG = {
     offsetY: 15,
     offsetX: 10,
     rotate: -8,
-    opacity: 0.3,
+    opacity: 0.4,
   },
 
   // Card sizing for different screens
@@ -98,8 +98,8 @@ const CARD_CONFIG = {
       padding: "60px 36px",
     },
     MOBILE: {
-      width: "290px",
-      height: "280px",
+      width: "200px",
+      height: "200px",
       padding: "40px 24px",
     },
   },
