@@ -10,15 +10,15 @@ import ProcessSteps from "./process-steps";
 export default function ProcessSection() {
   const { setActiveSection } = useScroll();
 
-  // Main section ref for navigation
+  // Main section ref for navigation with higher threshold for more precise detection
   const [mainSectionRef, mainSectionInView] = useInView({
-    threshold: 0.3,
+    threshold: 0.4,
     triggerOnce: false,
   });
 
   // Steps section ref for navigation
   const [stepsRef, stepsInView] = useInView({
-    threshold: 0.3,
+    threshold: 0.4,
     triggerOnce: false,
   });
 

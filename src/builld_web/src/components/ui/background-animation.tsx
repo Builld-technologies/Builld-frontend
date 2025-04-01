@@ -8,11 +8,15 @@ import gradientBg from "@public/animations/gradient-background.json";
 interface BackgroundAnimationProps {
   animationData?: object;
   withBlur?: boolean;
+  blurStrength?: number;
+  opacity?: number;
 }
 
 export default function BackgroundAnimation({
   animationData = gradientBg,
   withBlur = false,
+  blurStrength = 100,
+  opacity = 1,
 }: BackgroundAnimationProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -28,7 +32,7 @@ export default function BackgroundAnimation({
       <motion.div
         className="absolute inset-0 z-0 w-full h-full overflow-hidden"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{ opacity: opacity }}
         transition={{ duration: 1 }}
       >
         <Lottie
@@ -41,7 +45,7 @@ export default function BackgroundAnimation({
         />
       </motion.div>
 
-      {/* Blur Overlay - Exactly matching Figma specs */}
+      {/* Blur Overlay - Configurable strength */}
       {withBlur && (
         <motion.div
           className="absolute inset-0 z-1 w-full h-full"
@@ -49,8 +53,8 @@ export default function BackgroundAnimation({
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
           style={{
-            backdropFilter: "blur(100px)",
-            backgroundColor: "#FFFFFF1A",
+            backdropFilter: `blur(${blurStrength}px)`,
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
           }}
         />
       )}
