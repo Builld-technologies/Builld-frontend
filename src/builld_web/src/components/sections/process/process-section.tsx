@@ -16,23 +16,19 @@ export default function ProcessSection() {
     triggerOnce: false,
   });
 
-  // Steps section with progressive animations
+  // Steps section ref for navigation
   const [stepsRef, stepsInView] = useInView({
-    threshold: 0.5,
+    threshold: 0.3,
     triggerOnce: false,
   });
 
   // Set active section based on which part is in view
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (mainSectionInView && !stepsInView) {
-        setActiveSection("process");
-      } else if (stepsInView) {
-        setActiveSection("process-steps");
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
+    if (mainSectionInView) {
+      setActiveSection("process");
+    } else if (stepsInView) {
+      setActiveSection("process-steps");
+    }
   }, [mainSectionInView, stepsInView, setActiveSection]);
 
   return (
@@ -54,7 +50,7 @@ export default function ProcessSection() {
         className="relative z-10 section-fullscreen snap-section min-h-screen w-full flex items-center justify-center"
       >
         <BackgroundAnimation withBlur={true} />
-        <ProcessSteps inView={stepsInView} />
+        <ProcessSteps />
       </section>
     </>
   );

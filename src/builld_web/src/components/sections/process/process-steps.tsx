@@ -1,202 +1,436 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import ProcessCard from "../../ui/process-card";
+import { motion, AnimatePresence, useInView } from "framer-motion";
+import { IoChevronForwardOutline, IoChevronBackOutline } from "react-icons/io5";
 
-// Process card data with explicit typing
-interface ProcessCard {
+// Process card data
+interface ProcessCardData {
   title: string;
   description: string;
-  step: 1 | 2 | 3;
+  id: number;
 }
 
-const processCards: ProcessCard[] = [
+const processCards: ProcessCardData[] = [
   {
     title: "Pre-Project",
     description: "Planning, onboarding, and defining the scope.",
-    step: 1,
+    id: 1,
   },
   {
     title: "During Project",
     description:
       "Design sprints, prototype reviews, and iterative development.",
-    step: 2,
+    id: 2,
   },
   {
     title: "Close & Post-Project",
     description: "Deployment, client handover, and optional support.",
-    step: 3,
+    id: 3,
   },
 ];
 
-// Type definitions for animation maps
-type StepIndex = 0 | 1 | 2 | 3 | 4 | 5;
-type CardIndex = 1 | 2 | 3;
-type AnimationMap = Record<StepIndex, Record<CardIndex, number>>;
+// ADJUSTMENT AREA: Modify these values to adjust card positioning
+// ===================================================================
+const CARD_CONFIG = {
+  // Active card position (centered)
+  ACTIVE: {
+    y: 0,
+    x: 0,
+    rotate: 0,
+    opacity: 1,
+    zIndex: 30,
+    scale: 1,
+  },
 
-interface ProcessStepsProps {
-  inView: boolean;
-}
+  // BASE displacement values - First level displacement (when card becomes inactive)
+  // These values will be doubled for second level displacement
+  BASE_DISPLACEMENT: {
+    // Desktop base values (≥ 1024px)
+    DESKTOP: {
+      y: -500,
+      x: 60,
+      rotate: 15,
+      opacity: 0.7,
+      scale: 0.97,
+    },
 
-export default function ProcessSteps({ inView }: ProcessStepsProps) {
-  const [processCardStep, setProcessCardStep] = useState(0);
-  const [showFinalHeading, setShowFinalHeading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+    // Tablet base values (768px - 1023px)
+    TABLET: {
+      y: -400,
+      x: 45,
+      rotate: 15,
+      opacity: 0.7,
+      scale: 0.95,
+    },
 
-  // Handle card animations based on scroll and visibility
+    // Mobile base values (< 768px)
+    MOBILE: {
+      y: -300,
+      x: 30,
+      rotate: 15,
+      opacity: 0.7,
+      scale: 0.9,
+    },
+  },
+
+  // Multiplier for second level displacement
+  MULTIPLIER: 2,
+
+  // Cards behind active card
+  BEHIND: {
+    offsetY: 15,
+    offsetX: 10,
+    rotate: -8,
+    opacity: 0.3,
+  },
+
+  // Card sizing for different screens
+  CARD_SIZES: {
+    DESKTOP: {
+      width: "432px",
+      height: "423px",
+      padding: "91px 48px",
+    },
+    TABLET: {
+      width: "360px",
+      height: "350px",
+      padding: "60px 36px",
+    },
+    MOBILE: {
+      width: "290px",
+      height: "280px",
+      padding: "40px 24px",
+    },
+  },
+};
+// ===================================================================
+
+export default function ProcessSteps() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showFinalMessage, setShowFinalMessage] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: false, amount: 0.3 });
+  const prevInViewRef = useRef(isInView);
+
+  // Handle window resize for responsive adjustments
   useEffect(() => {
-    if (inView) {
-      // Start animation sequence only if we're at the beginning
-      if (processCardStep === 0) {
-        // Animation sequence timing
-        const step1 = setTimeout(() => setProcessCardStep(1), 300);
-        const step2 = setTimeout(() => setProcessCardStep(2), 1300);
-        const step3 = setTimeout(() => setProcessCardStep(3), 2300);
-        // Move cards up to make room for final heading
-        const step4 = setTimeout(() => {
-          setProcessCardStep(4);
-          // Final text reveal with proper delay
-          setTimeout(() => {
-            setProcessCardStep(5);
-            setShowFinalHeading(true);
-          }, 800);
-        }, 3300);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
 
-        return () => {
-          clearTimeout(step1);
-          clearTimeout(step2);
-          clearTimeout(step3);
-          clearTimeout(step4);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, []);
+
+  // Get appropriate base displacement config based on screen size
+  const getBaseDisplacement = () => {
+    const { DESKTOP, TABLET, MOBILE } = CARD_CONFIG.BASE_DISPLACEMENT;
+
+    if (windowWidth < 768) {
+      return MOBILE;
+    } else if (windowWidth < 1024) {
+      return TABLET;
+    } else {
+      return DESKTOP;
+    }
+  };
+
+  // Get first level displacement
+  const getFirstLevelDisplacement = () => {
+    const baseDisplacement = getBaseDisplacement();
+    return {
+      ...baseDisplacement,
+      zIndex: 40,
+    };
+  };
+
+  // Get second level displacement (multiply base by MULTIPLIER)
+  const getSecondLevelDisplacement = () => {
+    const baseDisplacement = getBaseDisplacement();
+    const { MULTIPLIER } = CARD_CONFIG;
+
+    return {
+      y: baseDisplacement.y * MULTIPLIER,
+      x: baseDisplacement.x * MULTIPLIER,
+      rotate: baseDisplacement.rotate * MULTIPLIER,
+      opacity: Math.max(0.1, baseDisplacement.opacity - 0.2),
+      zIndex: 50,
+      scale: Math.max(0.8, baseDisplacement.scale - 0.05),
+    };
+  };
+
+  // Get responsive card sizing
+  const getCardSizing = () => {
+    const { DESKTOP, TABLET, MOBILE } = CARD_CONFIG.CARD_SIZES;
+
+    if (windowWidth < 768) {
+      return MOBILE;
+    } else if (windowWidth < 1024) {
+      return TABLET;
+    } else {
+      return DESKTOP;
+    }
+  };
+
+  // Reset state when scrolling in and out of view
+  useEffect(() => {
+    // When element comes into view
+    if (isInView && !prevInViewRef.current) {
+      setActiveIndex(0);
+      setShowFinalMessage(false);
+
+      // Start animation sequence after a brief delay
+      const timer = setTimeout(() => setActiveIndex(1), 400);
+      return () => clearTimeout(timer);
+    }
+
+    // When element goes out of view
+    if (!isInView && prevInViewRef.current) {
+      setActiveIndex(0);
+      setShowFinalMessage(false);
+    }
+
+    // Update previous inView state
+    prevInViewRef.current = isInView;
+  }, [isInView]);
+
+  // Show final message when reaching the final state
+  useEffect(() => {
+    if (activeIndex === 3) {
+      const timer = setTimeout(() => setShowFinalMessage(true), 600);
+      return () => clearTimeout(timer);
+    } else {
+      setShowFinalMessage(false);
+    }
+  }, [activeIndex]);
+
+  // Get card styles based on active index and card position
+  const getCardStyles = (cardIndex: number) => {
+    const { ACTIVE, BEHIND } = CARD_CONFIG;
+    const firstLevel = getFirstLevelDisplacement();
+    const secondLevel = getSecondLevelDisplacement();
+
+    // Initial state - cards stacked
+    if (activeIndex === 0) {
+      return {
+        y: 0,
+        x: 0,
+        opacity: 1 - cardIndex * 0.2,
+        rotate: cardIndex * -8,
+        zIndex: 30 - cardIndex * 10,
+        scale: 1,
+      };
+    }
+
+    // First step - first card is active
+    if (activeIndex === 1) {
+      if (cardIndex === 0) {
+        return { ...ACTIVE };
+      }
+      if (cardIndex === 1) {
+        return {
+          y: BEHIND.offsetY,
+          x: BEHIND.offsetX,
+          rotate: BEHIND.rotate,
+          opacity: 1 - BEHIND.opacity,
+          zIndex: ACTIVE.zIndex - 10,
+          scale: 1,
         };
       }
-    } else {
-      // Reset animations when out of view for better UX on re-scroll
-      if (processCardStep > 0) {
-        setProcessCardStep(0);
-        setShowFinalHeading(false);
+      if (cardIndex === 2) {
+        return {
+          y: BEHIND.offsetY * 2,
+          x: BEHIND.offsetX * 2,
+          rotate: BEHIND.rotate * 2,
+          opacity: 1 - BEHIND.opacity * 2,
+          zIndex: ACTIVE.zIndex - 20,
+          scale: 1,
+        };
       }
     }
-  }, [inView, processCardStep]);
 
-  // Animation maps exactly matching the images
-  const rotationMap: AnimationMap = {
-    0: { 1: -15, 2: -30, 3: -45 }, // Initial state (stacked cards)
-    1: { 1: 0, 2: -15, 3: -30 }, // First card appears (focus)
-    2: { 1: -15, 2: 0, 3: -15 }, // Second card appears (focus)
-    3: { 1: -30, 2: -15, 3: 0 }, // Third card appears (focus)
-    4: { 1: -45, 2: -30, 3: -15 }, // Cards shift up
-    5: { 1: -55, 2: -40, 3: -25 }, // Final positions with more shift up
+    // Second step - second card is active, first card is displaced
+    if (activeIndex === 2) {
+      if (cardIndex === 0) {
+        // First card takes first level position
+        return firstLevel;
+      }
+      if (cardIndex === 1) {
+        // Second card becomes active
+        return { ...ACTIVE };
+      }
+      if (cardIndex === 2) {
+        // Third card is behind
+        return {
+          y: BEHIND.offsetY,
+          x: BEHIND.offsetX,
+          rotate: BEHIND.rotate,
+          opacity: 1 - BEHIND.opacity,
+          zIndex: ACTIVE.zIndex - 10,
+          scale: 1,
+        };
+      }
+    }
+
+    // Third step - third card is active, first card moves to second level, second card to first level
+    if (activeIndex === 3) {
+      if (cardIndex === 0) {
+        // First card takes second level position (2x displacement)
+        return secondLevel;
+      }
+      if (cardIndex === 1) {
+        // Second card takes first level position
+        return firstLevel;
+      }
+      if (cardIndex === 2) {
+        // Third card becomes active
+        return { ...ACTIVE };
+      }
+    }
+
+    // Default styles
+    return { x: 0, y: 0, rotate: 0, opacity: 0, zIndex: 0, scale: 1 };
   };
 
-  const yPositionMap: AnimationMap = {
-    0: { 1: 100, 2: 100, 3: 100 }, // Initial state (all cards off-screen)
-    1: { 1: 0, 2: 30, 3: 60 }, // First card appears
-    2: { 1: -30, 2: 0, 3: 30 }, // Second card appears
-    3: { 1: -60, 2: -30, 3: 0 }, // Third card appears
-    4: { 1: -100, 2: -70, 3: -40 }, // Cards shift up for final heading
-    5: { 1: -140, 2: -110, 3: -80 }, // Cards shift up more for final text
-  };
-
-  const opacityMap: AnimationMap = {
-    0: { 1: 0.8, 2: 0.5, 3: 0.2 }, // Initial state
-    1: { 1: 1, 2: 0.7, 3: 0.3 }, // First card appears
-    2: { 1: 0.7, 2: 1, 3: 0.7 }, // Second card appears
-    3: { 1: 0.3, 2: 0.7, 3: 1 }, // Third card appears
-    4: { 1: 0.2, 2: 0.5, 3: 0.8 }, // All cards shift up
-    5: { 1: 0.1, 2: 0.3, 3: 0.6 }, // Cards fade for final heading
-  };
-
-  // Helper functions
-  const getRotation = (cardId: number, currentStep: number): number => {
-    const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
-    const safeCardId = Math.min(3, Math.max(1, cardId)) as CardIndex;
-    return rotationMap[safeStep][safeCardId];
-  };
-
-  const getYPosition = (cardId: number, currentStep: number): number => {
-    const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
-    const safeCardId = Math.min(3, Math.max(1, cardId)) as CardIndex;
-    return yPositionMap[safeStep][safeCardId];
-  };
-
-  const getOpacity = (cardId: number, currentStep: number): number => {
-    const safeStep = Math.min(5, Math.max(0, currentStep)) as StepIndex;
-    const safeCardId = Math.min(3, Math.max(1, cardId)) as CardIndex;
-    return opacityMap[safeStep][safeCardId];
-  };
+  // Get current card sizing
+  const cardSizing = getCardSizing();
 
   return (
     <div
-      ref={containerRef}
-      className="w-full flex flex-col items-center justify-center relative py-24 overflow-y-auto"
-      style={{
-        height: "300vh",
-      }}
+      ref={sectionRef}
+      className="w-full h-screen flex flex-col items-center justify-center relative overflow-hidden"
     >
-      {/* Step indicators on the left */}
-      <div className="absolute left-8 md:left-24 top-1/2 transform -translate-y-1/2 text-2xl md:text-3xl font-bold z-10">
-        {processCardStep >= 1 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="mb-24 md:mb-32"
-          >
-            01.
-          </motion.div>
-        )}
-        {processCardStep >= 2 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="mb-24 md:mb-32"
-          >
-            02.
-          </motion.div>
-        )}
-        {processCardStep >= 3 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            03.
-          </motion.div>
-        )}
+      {/* Step Numbers - Only show the active one */}
+      <div className="absolute left-4 sm:left-10 md:left-20 top-32 sm:top-48 md:top-64 z-50">
+        <AnimatePresence mode="wait">
+          {activeIndex > 0 && activeIndex <= 3 && (
+            <motion.div
+              key={`step-${activeIndex}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold"
+            >
+              {`0${activeIndex}.`}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Center cards */}
-      <div className="relative h-96 w-full max-w-xl flex items-center justify-center">
-        {processCards.map((card) => (
-          <ProcessCard
-            key={card.step}
-            title={card.title}
-            description={card.description}
-            step={card.step}
-            rotation={getRotation(card.step, processCardStep)}
-            yPosition={getYPosition(card.step, processCardStep)}
-            opacity={getOpacity(card.step, processCardStep)}
-          />
-        ))}
+      {/* Cards container */}
+      <div className="w-full h-screen flex items-center justify-center">
+        <div
+          className="relative"
+          style={{
+            width: cardSizing.width,
+            height: cardSizing.height,
+          }}
+        >
+          {processCards.map((card, index) => {
+            const styles = getCardStyles(index);
+
+            return (
+              <motion.div
+                key={card.id}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  width: cardSizing.width,
+                  height: cardSizing.height,
+                  zIndex: styles.zIndex,
+                  transformOrigin: "center center",
+                }}
+                initial={{
+                  x: 0,
+                  y: 0,
+                  opacity: index === 0 ? 1 : 0.8 - index * 0.25,
+                  rotate: index * -8,
+                  scale: 1,
+                }}
+                animate={styles}
+                transition={{
+                  type: "spring",
+                  stiffness: 75,
+                  damping: 22,
+                }}
+              >
+                <div
+                  className="w-full h-full flex flex-col justify-center items-center text-center rounded-[40px]"
+                  style={{
+                    padding: cardSizing.padding,
+                    backgroundColor: "rgba(245, 245, 247, 0.1)",
+                    border: "1.5px solid rgba(245, 245, 247, 0.4)",
+                    backdropFilter: "blur(100px)",
+                    boxShadow:
+                      "0px 0px 20px 0px rgba(255, 255, 255, 0.4) inset",
+                  }}
+                >
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 md:mb-6">
+                    {card.title}
+                  </h3>
+                  <p className="text-sm sm:text-base md:text-lg text-white/80">
+                    {card.description}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Navigation arrows at bottom center */}
+      <div className="absolute bottom-6 sm:bottom-8 md:bottom-10 lg:bottom-16 flex space-x-6 md:space-x-8 z-40">
+        <button
+          onClick={() => activeIndex > 1 && setActiveIndex(activeIndex - 1)}
+          disabled={activeIndex <= 1}
+          className={`rounded-full border border-white/30 p-3 md:p-4 transition-all duration-300 ${
+            activeIndex <= 1
+              ? "text-white/30 cursor-not-allowed"
+              : "text-white hover:bg-white/10"
+          }`}
+          aria-label="Previous step"
+        >
+          <IoChevronBackOutline size={windowWidth < 640 ? 16 : 20} />
+        </button>
+
+        <button
+          onClick={() => activeIndex < 3 && setActiveIndex(activeIndex + 1)}
+          disabled={activeIndex === 3}
+          className={`rounded-full border ${
+            activeIndex === 3 ? "border-white/30" : "border-white"
+          } p-3 md:p-4 transition-all duration-300 ${
+            activeIndex === 3
+              ? "text-white/30 cursor-not-allowed"
+              : "text-white hover:bg-white/10"
+          }`}
+          aria-label="Next step"
+        >
+          <IoChevronForwardOutline size={windowWidth < 640 ? 16 : 20} />
+        </button>
       </div>
 
       {/* Final "All in Weeks" heading */}
-      <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.95 }}
-        animate={{
-          opacity: showFinalHeading ? 1 : 0,
-          y: showFinalHeading ? 0 : 40,
-          scale: showFinalHeading ? 1 : 0.95,
-        }}
-        transition={{ duration: 0.8, delay: 0.3 }}
-        className="mt-48 z-20"
-      >
-        <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold">
-          All in <span className="text-[#b0ff00]">Weeks!</span>
-        </h2>
-      </motion.div>
+      <AnimatePresence>
+        {showFinalMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 60 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-24 sm:bottom-28 md:bottom-36 lg:bottom-44 z-50"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-bold">
+              All in <span className="text-[#b0ff00]">Weeks!</span>
+            </h2>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
