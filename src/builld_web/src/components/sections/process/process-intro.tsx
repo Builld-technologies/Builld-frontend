@@ -2,10 +2,9 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 
-// Animation variants
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
   visible: (delay = 0) => ({
@@ -17,37 +16,22 @@ const fadeUpVariant = {
 
 const staggerChildren = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
 };
 
 export default function ProcessIntro() {
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
-  const [ref, inView] = useInView({
-    threshold: 0.3,
-    triggerOnce: false,
-  });
+  const [ref, inView] = useInView({ threshold: 0.3 });
 
-  // Handle window resize
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Get responsive logo size
-  const getLogoSize = () => {
+  const logoSize = useMemo(() => {
     if (windowWidth < 640) {
       return {
         containerSize: "w-36 h-36",
@@ -73,17 +57,14 @@ export default function ProcessIntro() {
         roundedSize: "rounded-[80px]",
       };
     }
-  };
-
-  const logoSize = getLogoSize();
+  }, [windowWidth]);
 
   return (
     <div
       ref={ref}
-      className="max-w-7xl z-10 w-full px-4 sm:px-6 md:px-10 mx-auto py-8 sm:py-12 md:py-16"
+      className="max-w-7xl w-full mx-auto px-4 sm:px-6 md:px-0  py-8 sm:py-12 md:py-16 relative z-10"
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
-        {/* Logo Section - Left Side */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={
@@ -113,7 +94,6 @@ export default function ProcessIntro() {
           </div>
         </motion.div>
 
-        {/* Content Section - Right Side */}
         <motion.div
           variants={staggerChildren}
           initial="hidden"

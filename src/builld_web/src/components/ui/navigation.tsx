@@ -29,7 +29,7 @@ export default function Navigation({
     {
       label: "Process",
       section: "process",
-      activeSections: ["process", "process-steps"], // Consider both sections for active state
+      activeSections: ["process", "process-steps"],
     },
     { label: "Services", section: "services" },
     { label: "Contact", section: "contact" },
@@ -60,7 +60,7 @@ export default function Navigation({
           <motion.button
             key={item.label}
             onClick={() => handleNavClick(item.section)}
-            className={`py-3 px-2 text-left text-lg font-medium border-b border-gray-700/30 ${
+            className={`cursor-pointer py-3 px-2 text-left text-lg font-medium border-b border-gray-700/30 ${
               isActive(item)
                 ? "text-accent-green"
                 : "text-white hover:text-accent-green"
@@ -81,7 +81,7 @@ export default function Navigation({
         <motion.button
           key={item.label}
           onClick={() => handleNavClick(item.section)}
-          className={`text-sm lg:text-base font-medium transition-colors ${
+          className={`cursor-pointer text-sm lg:text-base font-medium transition-colors ${
             isActive(item)
               ? "text-accent-green"
               : "text-white hover:text-accent-green"

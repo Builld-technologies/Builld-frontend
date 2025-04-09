@@ -8,7 +8,6 @@ import { useInView } from "react-intersection-observer";
 import { useScroll } from "../../context/scroll-context";
 import BackgroundAnimation from "../ui/background-animation";
 
-// Animation speed constants
 const ANIMATION_DURATION = 0.4;
 const STAGGER_DELAY = 0.1;
 
@@ -26,30 +25,24 @@ const staggerChildren = {
   visible: { transition: { staggerChildren: STAGGER_DELAY } },
 };
 
-// Custom hook to track window width
 const useWindowWidth = () => {
   const [width, setWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
-
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
   return width;
 };
 
 export default function HeroAndAboutSections() {
   const { setActiveSection } = useScroll();
   const windowWidth = useWindowWidth();
-
-  // Intersection observers for section tracking
   const [heroRef, heroInView] = useInView({ threshold: 0.6 });
   const [aboutRef, aboutInView] = useInView({ threshold: 0.6 });
 
-  // Update active section based on current in-view element
   useEffect(() => {
     if (heroInView) {
       setActiveSection("hero");
@@ -58,7 +51,6 @@ export default function HeroAndAboutSections() {
     }
   }, [heroInView, aboutInView, setActiveSection]);
 
-  // Memoized logo sizes based on window width
   const logoSize = useMemo(() => {
     if (windowWidth < 640) return { width: 32, height: 32 };
     if (windowWidth < 768) return { width: 36, height: 36 };
@@ -96,7 +88,6 @@ export default function HeroAndAboutSections() {
 
   return (
     <>
-      {/* Hero Section */}
       <section
         id="section-hero"
         ref={heroRef}
@@ -129,11 +120,10 @@ export default function HeroAndAboutSections() {
                     className="relative inline-flex"
                   >
                     <div
-                      className="flex items-center justify-center rounded-md"
+                      className="flex items-center justify-center rounded-3xl"
                       style={{
-                        width: "3rem",
-                        height: "3rem",
-                        padding: "8px",
+                        width: "5rem",
+                        height: "5rem",
                         backgroundColor: "rgba(255, 255, 255, 0.05)",
                         backdropFilter: "blur(66.67px)",
                       }}
@@ -143,7 +133,7 @@ export default function HeroAndAboutSections() {
                         alt="Logo"
                         width={logoSize.width}
                         height={logoSize.height}
-                        className="object-contain"
+                        className="object-contain p-2"
                         priority
                       />
                     </div>
@@ -173,9 +163,7 @@ export default function HeroAndAboutSections() {
                 variants={fadeUpVariant}
               >
                 High-quality websites and digital products,
-                {windowWidth >= 640 && <br />}
-                {windowWidth < 640 && " "}
-                delivered on time, every time.
+                {windowWidth >= 640 && <br />} delivered on time, every time.
               </motion.p>
             </motion.div>
             <motion.div
@@ -201,15 +189,14 @@ export default function HeroAndAboutSections() {
         </div>
       </section>
 
-      {/* About Section */}
       <section
         id="section-about"
         ref={aboutRef}
         className="relative section-fullscreen snap-section min-h-screen w-full overflow-hidden"
       >
         <BackgroundAnimation withBlur={true} />
-        <div className="max-w-7xl w-full px-4 sm:px-6 md:px-10 lg:px-16 mx-auto relative z-10 flex items-center h-full py-10 sm:py-16 md:py-20">
-          <div className="flex flex-col md:flex-row items-center md:items-start lg:items-center gap-8 sm:gap-12 md:gap-16 lg:gap-20">
+        <div className="max-w-7xl w-full px-4 sm:px-6 md:px-0 mx-auto relative z-10 py-10 sm:py-16 md:py-20">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={
@@ -218,7 +205,7 @@ export default function HeroAndAboutSections() {
                   : { opacity: 0, scale: 0.9 }
               }
               transition={{ duration: ANIMATION_DURATION }}
-              className="flex-shrink-0"
+              className="md:col-span-4 flex justify-center md:justify-start"
             >
               <div
                 className={`${aboutLogoSize.containerSize} flex items-center justify-center ${aboutLogoSize.roundedSize} transform -rotate-45`}
@@ -242,13 +229,13 @@ export default function HeroAndAboutSections() {
               variants={staggerChildren}
               initial="hidden"
               animate={aboutInView ? "visible" : "hidden"}
-              className="flex flex-col items-start max-w-3xl"
+              className="md:col-span-8 flex flex-col"
             >
               <motion.div
                 className="text-xs sm:text-sm mb-6 sm:mb-8 md:mb-10 opacity-70"
                 variants={fadeUpVariant}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center md:justify-start">
                   <div className="w-6 sm:w-8 h-px bg-white mr-2"></div>
                   About us
                 </div>

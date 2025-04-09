@@ -35,7 +35,6 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
   const manualSectionUpdateRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup timeout on unmount.
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -46,7 +45,6 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
     if (isScrolling.current) return;
     isScrolling.current = true;
     manualSectionUpdateRef.current = true;
-
     const element = document.getElementById(`section-${section}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -62,7 +60,6 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Debounced active section setter to avoid rapid changes.
   const debouncedSetActiveSection = useCallback(
     (section: SectionType) => {
       if (section === activeSection || manualSectionUpdateRef.current) return;
@@ -72,7 +69,6 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
     [activeSection]
   );
 
-  // Monitor scroll position and update active section accordingly.
   useEffect(() => {
     const handleScroll = () => {
       if (isScrolling.current || manualSectionUpdateRef.current) return;
@@ -90,15 +86,14 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
       let maxVisibleArea = 0;
       const windowHeight = window.innerHeight;
 
-      for (const section of sections) {
+      sections.forEach((section) => {
         const element = document.getElementById(`section-${section}`);
-        if (!element) continue;
+        if (!element) return;
         const { top, bottom } = element.getBoundingClientRect();
         const visibleTop = Math.max(0, top);
         const visibleBottom = Math.min(windowHeight, bottom);
         if (visibleBottom > visibleTop) {
           const visibleArea = visibleBottom - visibleTop;
-          // Adjust weight to favor sections closer to the top.
           const adjustedArea =
             visibleArea * (1 + (1 - visibleTop / windowHeight) * 0.1);
           if (adjustedArea > maxVisibleArea) {
@@ -106,13 +101,12 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
             maxVisibleSection = section;
           }
         }
-      }
+      });
 
       if (maxVisibleSection && maxVisibleSection !== activeSection) {
         debouncedSetActiveSection(maxVisibleSection);
       }
 
-      // Update process card step when in the process section.
       if (activeSection === "process") {
         const processSection = document.getElementById("section-process");
         if (processSection) {
@@ -126,7 +120,6 @@ export const ScrollProvider = ({ children }: { children: React.ReactNode }) => {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("wheel", handleScroll, { passive: true });
-    // Initial call to set the active section.
     handleScroll();
     return () => {
       window.removeEventListener("scroll", handleScroll);

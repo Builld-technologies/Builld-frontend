@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -12,81 +12,53 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const [progress, setProgress] = useState(0);
   const [currentMilestone, setCurrentMilestone] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1200
-  );
 
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
+  const milestones = useMemo(() => [0, 25, 50, 75, 100], []);
+  const duration = 800;
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, []);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const milestones = [0, 25, 50, 75, 100];
-
-  // Progress animation
   useEffect(() => {
     if (currentMilestone >= milestones.length - 1) return;
-
+    const start = performance.now();
     const current = milestones[currentMilestone];
     const next = milestones[currentMilestone + 1];
-    const duration = 800;
-    const startTime = Date.now();
 
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      setProgress(current + (next - current) * progress);
-
-      if (progress < 1) {
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      setProgress(current + (next - current) * t);
+      if (t < 1) {
         requestAnimationFrame(animate);
       } else {
         setCurrentMilestone((prev) => prev + 1);
       }
     };
-
-    const timer = setTimeout(
+    const timeoutId = setTimeout(
       () => requestAnimationFrame(animate),
       currentMilestone === 0 ? 500 : 300
     );
-
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timeoutId);
   }, [currentMilestone, milestones]);
 
-  // Handle completion
   useEffect(() => {
     if (currentMilestone === milestones.length - 1) {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setIsExiting(true);
-        setTimeout(() => {
-          if (onComplete) onComplete();
-        }, 800);
+        setTimeout(() => onComplete?.(), 800);
       }, 500);
+      return () => clearTimeout(timeoutId);
     }
   }, [currentMilestone, milestones.length, onComplete]);
 
-  // Get responsive logo size
-  const getLogoSize = () => {
-    if (windowWidth < 640) {
-      return { width: 160, height: 40 };
-    } else if (windowWidth < 768) {
-      return { width: 200, height: 50 };
-    } else if (windowWidth < 1024) {
-      return { width: 220, height: 55 };
-    } else {
+  const logoSize = useMemo(() => {
+    if (typeof window !== "undefined") {
+      const width = window.innerWidth;
+      if (width < 640) return { width: 160, height: 40 };
+      if (width < 768) return { width: 200, height: 50 };
+      if (width < 1024) return { width: 220, height: 55 };
       return { width: 240, height: 60 };
     }
-  };
-
-  const logoSize = getLogoSize();
+    return { width: 240, height: 60 };
+  }, []);
 
   return (
     <motion.div
@@ -95,7 +67,6 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       animate={{ y: isExiting ? "-100%" : 0 }}
       transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
     >
-      {/* Logo */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <Image
           src="/logo.png"
@@ -106,17 +77,13 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           className="w-auto h-auto"
         />
       </div>
-
-      {/* Progress bar */}
-      <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-0 right-0 px-6 sm:px-8 md:px-12 w-full">
+      <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-0 right-0 px-6 sm:px-8 md:px-12">
         <div className="h-1 sm:h-1.5 w-full rounded bg-[#1a1a1a] relative">
           <motion.div
             className="h-full rounded bg-[#b0ff00]"
             style={{ width: `${progress}%` }}
           />
         </div>
-
-        {/* Percentage */}
         <div className="absolute right-6 sm:right-8 md:right-12 top-[-24px] sm:top-[-26px] md:top-[-30px]">
           <motion.div
             key={milestones[currentMilestone]}

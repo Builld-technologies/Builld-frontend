@@ -46,7 +46,6 @@ export default function ServicesSection() {
   });
   const [ref, inView] = useInView({ threshold: 0.3 });
 
-  // Update active section with a short delay; clear the timer on unmount.
   useEffect(() => {
     if (inView) {
       const timer = setTimeout(() => setActiveSection("services"), 50);
@@ -61,7 +60,7 @@ export default function ServicesSection() {
     }));
   };
 
-  // Memoize plans so that they are not recreated on every render.
+  // Memoize plans to avoid unnecessary re-creation on re-renders.
   const plans: Plan[] = useMemo(
     () => [
       {
@@ -111,7 +110,7 @@ export default function ServicesSection() {
       className="section-fullscreen snap-section bg-gradient-to-br from-purple-800 to-purple-900 flex flex-col items-center justify-center py-12 px-4 md:px-6 overflow-y-auto"
     >
       <BackgroundAnimation withBlur />
-      <div className="relative z-10 text-center mb-6 md:mb-8">
+      <div className="relative z-10 text-center mb-6 md:mb-8 max-w-7xl w-full mx-auto">
         <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-2">
           Plans & Pricing
         </h2>
@@ -136,7 +135,7 @@ export default function ServicesSection() {
         ))}
       </div>
 
-      <div className="relative z-10 grid md:grid-cols-2 gap-6 md:gap-8 w-full max-w-5xl mx-auto">
+      <div className="relative z-10 grid md:grid-cols-2 gap-6 md:gap-8 max-w-7xl w-full mx-auto">
         {plans.map((plan) => (
           <motion.div
             key={plan.name}

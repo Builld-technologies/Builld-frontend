@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
 import Logo from "@/components/ui/logo";
 import Navigation from "@/components/ui/navigation";
 import { useScroll } from "@/context/scroll-context";
-import { useEffect, useState } from "react";
 
 export default function Header() {
   const { activeSection } = useScroll();
@@ -12,46 +12,27 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shouldRender, setShouldRender] = useState(true);
 
-  // Check for splash screen in a useEffect to avoid conditional hook calls
   useEffect(() => {
     setShouldRender(activeSection !== "splash");
   }, [activeSection]);
 
-  // Add scroll detection for header appearance
   useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
     const handleResize = () => {
-      // Close mobile menu when resizing to desktop
-      if (window.innerWidth >= 768) {
-        setMenuOpen(false);
-      }
+      if (window.innerWidth >= 768) setMenuOpen(false);
     };
-
-    const handleScroll = () => {
-      const offset = window.scrollY;
-      if (offset > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
-
-    // Add both event listeners
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
-
-    // Clean up both event listeners
     return () => {
-      window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
-  // Handle menu toggling
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
+  const toggleMenu = useCallback(() => {
+    setMenuOpen((prev) => !prev);
+  }, []);
 
-  // Close menu when user clicks outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -63,14 +44,11 @@ export default function Header() {
         setMenuOpen(false);
       }
     };
-
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [menuOpen]);
 
-  if (!shouldRender) {
-    return null;
-  }
+  if (!shouldRender) return null;
 
   return (
     <motion.header
@@ -81,13 +59,9 @@ export default function Header() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex justify-between items-center max-w-7xl mx-auto">
+      <div className="flex justify-between items-center max-w-7xl w-full mx-auto">
         <Logo />
-
-        {/* Desktop Navigation */}
         <Navigation />
-
-        {/* Mobile Menu Button */}
         <div className="md:hidden" data-menu="button">
           <button
             onClick={toggleMenu}
@@ -105,7 +79,7 @@ export default function Header() {
               className="relative w-6 h-6"
             >
               <motion.span
-                className="absolute block h-0.5 bg-white w-6 transform-gpu"
+                className="absolute block h-0.5 bg-white w-6"
                 style={{ top: "40%" }}
                 variants={{
                   open: { rotate: 45, translateY: 1 },
@@ -114,7 +88,7 @@ export default function Header() {
                 transition={{ duration: 0.3 }}
               />
               <motion.span
-                className="absolute block h-0.5 bg-white w-6 transform-gpu"
+                className="absolute block h-0.5 bg-white w-6"
                 style={{ top: "60%" }}
                 variants={{
                   open: { rotate: -45, translateY: -1 },
@@ -126,8 +100,6 @@ export default function Header() {
           </button>
         </div>
       </div>
-
-      {/* Mobile Navigation Overlay */}
       <motion.nav
         initial={{ height: 0, opacity: 0 }}
         animate={{
@@ -140,7 +112,7 @@ export default function Header() {
         data-menu="container"
       >
         <div className="p-4 sm:p-6">
-          <Navigation isMobile={true} closeMenu={() => setMenuOpen(false)} />
+          <Navigation isMobile closeMenu={() => setMenuOpen(false)} />
         </div>
       </motion.nav>
     </motion.header>

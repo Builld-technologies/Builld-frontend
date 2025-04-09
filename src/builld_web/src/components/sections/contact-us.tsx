@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useScroll } from "@/context/scroll-context";
 
-// Animation variants
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: (delay = 0) => ({
@@ -22,35 +21,16 @@ export default function ContactUs() {
     businessStage: "",
     challenge: "",
   });
-
   const { setActiveSection } = useScroll();
   const [ref, inView] = useInView({ threshold: 0.3 });
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1024
-  );
 
-  // Update active section when this section comes into view
   useEffect(() => {
     if (inView) {
-      const timer = setTimeout(() => {
-        setActiveSection("contact");
-      }, 100);
+      const timer = setTimeout(() => setActiveSection("contact"), 100);
       return () => clearTimeout(timer);
     }
   }, [inView, setActiveSection]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -63,10 +43,8 @@ export default function ContactUs() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
     setTimeout(() => {
       setFormSubmitted(true);
-      // Reset form after submission
       setFormData({
         email: "",
         phoneNumber: "",
@@ -80,10 +58,9 @@ export default function ContactUs() {
     <section
       id="section-contact"
       ref={ref}
-      className="section-fullscreen snap-section flex items-center justify-center px-4 sm:px-6 md:px-8 py-10 sm:py-12 md:py-16"
+      className="section-fullscreen snap-section flex items-center justify-center py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8"
     >
-      <div className="relative z-10 w-full max-w-6xl flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
-        {/* Left side: Text */}
+      <div className="relative z-10 max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
         <div className="w-full max-w-2xl text-white">
           <motion.h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6"
@@ -95,7 +72,6 @@ export default function ContactUs() {
             Let&apos;s Build <span className="text-[#b0ff00]">Something</span>{" "}
             Together
           </motion.h2>
-
           <motion.p
             className="text-base sm:text-lg text-gray-300 mb-6 sm:mb-8"
             initial="hidden"
@@ -106,8 +82,6 @@ export default function ContactUs() {
             Ready to bring your ideas to life? Reach out to us and let&apos;s
             get started.
           </motion.p>
-
-          {/* Contact Info */}
           <motion.div
             className="space-y-4"
             initial="hidden"
@@ -125,8 +99,6 @@ export default function ContactUs() {
             </div>
           </motion.div>
         </div>
-
-        {/* Right side: Form */}
         <motion.form
           className="w-full max-w-xl bg-zinc-800/50 backdrop-blur-lg p-6 sm:p-7 md:p-8 rounded-xl sm:rounded-2xl"
           initial="hidden"
@@ -192,7 +164,6 @@ export default function ContactUs() {
                     placeholder="your@email.com"
                   />
                 </div>
-
                 <div>
                   <label
                     htmlFor="phoneNumber"
@@ -210,7 +181,6 @@ export default function ContactUs() {
                     placeholder="123-456-7890"
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label
                     htmlFor="businessStage"
@@ -231,7 +201,6 @@ export default function ContactUs() {
                   </select>
                 </div>
               </div>
-
               <div className="mb-6">
                 <label
                   htmlFor="challenge"
@@ -244,12 +213,11 @@ export default function ContactUs() {
                   name="challenge"
                   value={formData.challenge}
                   onChange={handleChange}
-                  rows={windowWidth < 640 ? 3 : 4}
+                  rows={4}
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#b0ff00] resize-none"
                   placeholder="What's your biggest challenge right now?"
                 />
               </div>
-
               <motion.button
                 type="submit"
                 className="w-full py-3 sm:py-4 bg-[#b0ff00] text-black rounded-lg text-base sm:text-lg font-medium hover:bg-[#9ee600] transition-colors"
