@@ -14,21 +14,34 @@ import ServicesSection from "@/components/sections/services-section";
 import ContactUs from "@/components/sections/contact-us";
 import HeroAndAboutSections from "@/components/sections/hero-about-section";
 
+// Simple hook to detect mobile devices (width < 768px)
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  return isMobile;
+}
+
 function HomeContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [splashComplete, setSplashComplete] = useState(false);
   const { setActiveSection } = useScroll();
   const isScrollingRef = useRef(false);
+  const isMobile = useIsMobile();
 
-  // Handle splash completion
+  // When splash is finished, mark complete and update active section.
   const handleSplashComplete = useCallback(() => {
     setSplashComplete(true);
     setActiveSection("hero");
   }, [setActiveSection]);
 
-  // Setup scroll snapping
+  // Only attach custom snapping listeners on non-mobile devices.
   useEffect(() => {
-    if (!containerRef.current || !splashComplete) return;
+    if (!containerRef.current || !splashComplete || isMobile) return;
 
     const handleWheel = (e: WheelEvent) => {
       if (isScrollingRef.current) {
@@ -38,11 +51,10 @@ function HomeContent() {
 
       const direction = e.deltaY > 0 ? 1 : -1;
       const sections = document.querySelectorAll('section[id^="section-"]');
-
-      // Find current section
       const windowHeight = window.innerHeight;
       let currentIndex = 0;
 
+      // Find current section based on its distance to viewport center.
       sections.forEach((section, index) => {
         const rect = section.getBoundingClientRect();
         if (Math.abs(rect.top) < windowHeight / 2) {
@@ -50,70 +62,54 @@ function HomeContent() {
         }
       });
 
-      // Calculate target section
       const targetIndex = Math.max(
         0,
         Math.min(sections.length - 1, currentIndex + direction)
       );
-
       if (targetIndex === currentIndex) return;
 
       e.preventDefault();
       isScrollingRef.current = true;
-
-      // Scroll to target section
       const targetSection = sections[targetIndex] as HTMLElement;
       targetSection.scrollIntoView({ behavior: "smooth" });
-
-      // Update active section
       const sectionId = targetSection.id.replace("section-", "") as SectionType;
       setActiveSection(sectionId);
-
-      // Reset scrolling flag
-      setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 1000);
+      setTimeout(() => (isScrollingRef.current = false), 1000);
     };
 
-    // Touch handling
     let touchStartY = 0;
-
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
     };
-
     const handleTouchMove = (e: TouchEvent) => {
       if (isScrollingRef.current) return;
-
       const touchY = e.touches[0].clientY;
       const direction = touchStartY > touchY ? 1 : -1;
-
       if (Math.abs(touchStartY - touchY) > 50) {
         const event = new WheelEvent("wheel", { deltaY: direction });
         handleWheel(event);
       }
     };
 
-    // Add event listeners
     window.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: true });
-
     return () => {
       window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [splashComplete, setActiveSection]);
+  }, [splashComplete, isMobile, setActiveSection]);
 
   return (
     <div className="relative h-screen overflow-hidden">
       {splashComplete && <Header />}
       {splashComplete && <PageIndicator />}
-
       <div
-        className="h-screen overflow-y-auto scroll-smooth snap-y snap-mandatory"
         ref={containerRef}
+        className={`h-screen overflow-y-auto scroll-smooth ${
+          !isMobile ? "snap-y snap-mandatory" : ""
+        }`}
       >
         <SplashScreen onComplete={handleSplashComplete} />
         <HeroAndAboutSections />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { FaArrowRight } from "react-icons/fa";
@@ -8,44 +8,48 @@ import { useInView } from "react-intersection-observer";
 import { useScroll } from "../../context/scroll-context";
 import BackgroundAnimation from "../ui/background-animation";
 
-// Animation variants
+// Animation speed constants
+const ANIMATION_DURATION = 0.4;
+const STAGGER_DELAY = 0.1;
+
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 30 },
   visible: (delay = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.7, delay },
+    transition: { duration: ANIMATION_DURATION, delay },
   }),
 };
 
 const staggerChildren = {
   hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
+  visible: { transition: { staggerChildren: STAGGER_DELAY } },
+};
+
+// Custom hook to track window width
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
+
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return width;
 };
 
 export default function HeroAndAboutSections() {
   const { setActiveSection } = useScroll();
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1200
-  );
+  const windowWidth = useWindowWidth();
 
-  // Hero section in-view tracking with options optimized for section detection
-  const [heroRef, heroInView] = useInView({
-    threshold: 0.6, // Higher threshold to ensure more precision
-    triggerOnce: false,
-  });
+  // Intersection observers for section tracking
+  const [heroRef, heroInView] = useInView({ threshold: 0.6 });
+  const [aboutRef, aboutInView] = useInView({ threshold: 0.6 });
 
-  // About section in-view tracking
-  const [aboutRef, aboutInView] = useInView({
-    threshold: 0.6, // Higher threshold to ensure more precision
-    triggerOnce: false,
-  });
-
-  // Update active section based on which section is in view
+  // Update active section based on current in-view element
   useEffect(() => {
     if (heroInView) {
       setActiveSection("hero");
@@ -54,33 +58,15 @@ export default function HeroAndAboutSections() {
     }
   }, [heroInView, aboutInView, setActiveSection]);
 
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
+  // Memoized logo sizes based on window width
+  const logoSize = useMemo(() => {
+    if (windowWidth < 640) return { width: 32, height: 32 };
+    if (windowWidth < 768) return { width: 36, height: 36 };
+    if (windowWidth < 1024) return { width: 40, height: 40 };
+    return { width: 42, height: 42 };
+  }, [windowWidth]);
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, []);
-
-  // Get responsive logo size
-  const getLogoSize = () => {
-    if (windowWidth < 640) {
-      return { width: 32, height: 32 };
-    } else if (windowWidth < 768) {
-      return { width: 36, height: 36 };
-    } else if (windowWidth < 1024) {
-      return { width: 40, height: 40 };
-    } else {
-      return { width: 42, height: 42 };
-    }
-  };
-
-  // Get about logo size
-  const getAboutLogoSize = () => {
+  const aboutLogoSize = useMemo(() => {
     if (windowWidth < 640) {
       return {
         containerSize: "w-40 h-40",
@@ -106,77 +92,64 @@ export default function HeroAndAboutSections() {
         roundedSize: "rounded-[80px]",
       };
     }
-  };
-
-  const logoSize = getLogoSize();
-  const aboutLogoSize = getAboutLogoSize();
+  }, [windowWidth]);
 
   return (
     <>
-      {/* Hero Section - ID matches ScrollContext expected format */}
+      {/* Hero Section */}
       <section
         id="section-hero"
         ref={heroRef}
-        className="section-fullscreen snap-section gradient-bg flex items-center justify-center"
+        className="section-fullscreen snap-section gradient-bg flex items-center justify-center relative"
       >
         <BackgroundAnimation />
-
         <div className="max-w-7xl w-full px-4 sm:px-6 md:px-10 mx-auto relative z-10">
           <div className="flex flex-col items-center text-center">
-            {/* Main headline */}
             <motion.div
               className="mb-6 sm:mb-8 md:mb-10"
               initial="hidden"
               animate={heroInView ? "visible" : "hidden"}
               variants={staggerChildren}
             >
-              {/* Build Launch */}
               <motion.h1
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 sm:mb-6"
                 variants={staggerChildren}
               >
                 <motion.div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-5">
                   <motion.span variants={fadeUpVariant}>Build</motion.span>
-
-                  {/* L image with improved spacing */}
                   <motion.div
                     variants={{
                       hidden: { opacity: 0, scale: 0.9 },
                       visible: {
                         opacity: 1,
                         scale: 1,
-                        transition: { duration: 0.7 },
+                        transition: { duration: ANIMATION_DURATION },
                       },
                     }}
                     className="relative inline-flex"
                   >
                     <div
-                      className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center rounded-[16px] sm:rounded-[20px] md:rounded-[26.67px]"
+                      className="flex items-center justify-center rounded-md"
                       style={{
-                        padding: "8px sm:10px md:13.33px",
+                        width: "3rem",
+                        height: "3rem",
+                        padding: "8px",
                         backgroundColor: "rgba(255, 255, 255, 0.05)",
                         backdropFilter: "blur(66.67px)",
                       }}
                     >
-                      <div className="flex items-center justify-center w-full h-full">
-                        <Image
-                          src="/images/L.png"
-                          alt="Logo"
-                          width={logoSize.width}
-                          height={logoSize.height}
-                          className="object-contain"
-                          priority
-                        />
-                      </div>
+                      <Image
+                        src="/images/L.png"
+                        alt="Logo"
+                        width={logoSize.width}
+                        height={logoSize.height}
+                        className="object-contain"
+                        priority
+                      />
                     </div>
                   </motion.div>
-
-                  <motion.span variants={fadeUpVariant} custom={1}>
-                    Launch
-                  </motion.span>
+                  <motion.span variants={fadeUpVariant}>Launch</motion.span>
                 </motion.div>
-
-                {/* In Weeks Not Months */}
                 <motion.div
                   className="mt-2 sm:mt-3 md:mt-4 flex flex-wrap items-center justify-center"
                   variants={staggerChildren}
@@ -184,25 +157,20 @@ export default function HeroAndAboutSections() {
                   <motion.span
                     className="text-[#b0ff00]"
                     variants={fadeUpVariant}
-                    custom={2}
                   >
                     in Weeks
                   </motion.span>
                   <motion.span
                     className="ml-2 sm:ml-3 md:ml-4 text-gray-300"
                     variants={fadeUpVariant}
-                    custom={3}
                   >
                     <span className="line-through opacity-60">Not Months</span>
                   </motion.span>
                 </motion.div>
               </motion.h1>
-
-              {/* Subheading */}
               <motion.p
                 className="text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mt-4 sm:mt-5 md:mt-6"
                 variants={fadeUpVariant}
-                custom={4}
               >
                 High-quality websites and digital products,
                 {windowWidth >= 640 && <br />}
@@ -210,13 +178,10 @@ export default function HeroAndAboutSections() {
                 delivered on time, every time.
               </motion.p>
             </motion.div>
-
-            {/* CTA Button */}
             <motion.div
               variants={fadeUpVariant}
               initial="hidden"
               animate={heroInView ? "visible" : "hidden"}
-              custom={5}
               className="mt-4 sm:mt-5 md:mt-6"
             >
               <motion.button
@@ -236,18 +201,15 @@ export default function HeroAndAboutSections() {
         </div>
       </section>
 
-      {/* About Section - ID matches ScrollContext expected format */}
+      {/* About Section */}
       <section
         id="section-about"
         ref={aboutRef}
         className="relative section-fullscreen snap-section min-h-screen w-full overflow-hidden"
       >
-        {/* Background Animation */}
         <BackgroundAnimation withBlur={true} />
-
         <div className="max-w-7xl w-full px-4 sm:px-6 md:px-10 lg:px-16 mx-auto relative z-10 flex items-center h-full py-10 sm:py-16 md:py-20">
           <div className="flex flex-col md:flex-row items-center md:items-start lg:items-center gap-8 sm:gap-12 md:gap-16 lg:gap-20">
-            {/* Logo Section - Left Side */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={
@@ -255,7 +217,7 @@ export default function HeroAndAboutSections() {
                   ? { opacity: 1, scale: 1 }
                   : { opacity: 0, scale: 0.9 }
               }
-              transition={{ duration: 0.6 }}
+              transition={{ duration: ANIMATION_DURATION }}
               className="flex-shrink-0"
             >
               <div
@@ -266,20 +228,16 @@ export default function HeroAndAboutSections() {
                   backdropFilter: "blur(200px)",
                 }}
               >
-                <div className="flex items-center justify-center w-full h-full">
-                  <Image
-                    src="/images/L.png"
-                    alt="Company Logo"
-                    width={aboutLogoSize.logoSize.width}
-                    height={aboutLogoSize.logoSize.height}
-                    className="object-contain"
-                    quality={100}
-                  />
-                </div>
+                <Image
+                  src="/images/L.png"
+                  alt="Company Logo"
+                  width={aboutLogoSize.logoSize.width}
+                  height={aboutLogoSize.logoSize.height}
+                  className="object-contain"
+                  quality={100}
+                />
               </div>
             </motion.div>
-
-            {/* Content Section - Right Side */}
             <motion.div
               variants={staggerChildren}
               initial="hidden"
@@ -295,7 +253,6 @@ export default function HeroAndAboutSections() {
                   About us
                 </div>
               </motion.div>
-
               <motion.h2
                 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 text-white leading-tight tracking-wide"
                 variants={fadeUpVariant}
@@ -304,7 +261,6 @@ export default function HeroAndAboutSections() {
                 <br />
                 into Digital Solutions
               </motion.h2>
-
               <motion.p
                 className="text-sm sm:text-base md:text-lg max-w-2xl text-gray-200 opacity-90 leading-relaxed"
                 variants={fadeUpVariant}

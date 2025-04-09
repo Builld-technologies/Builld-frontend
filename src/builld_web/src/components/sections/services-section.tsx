@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useScroll } from "@/context/scroll-context";
 import { useInView } from "react-intersection-observer";
 import BackgroundAnimation from "../ui/background-animation";
@@ -23,7 +23,20 @@ interface Plan {
   isLight: boolean;
 }
 
+const PLAN_PERIODS: PlanPeriod[] = ["monthly", "quarterly", "yearly"];
+const ANIM_DURATION = 0.3;
+
+const fadeUpVariant = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: ANIM_DURATION, delay },
+  }),
+};
+
 export default function ServicesSection() {
+  const { setActiveSection } = useScroll();
   const [selectedPlan, setSelectedPlan] = useState<PlanPeriod>("monthly");
   const [showOptionalServices, setShowOptionalServices] = useState<
     Record<string, boolean>
@@ -31,15 +44,12 @@ export default function ServicesSection() {
     LaunchPad: false,
     Ignite: false,
   });
-  const { setActiveSection } = useScroll();
   const [ref, inView] = useInView({ threshold: 0.3 });
 
-  // Update active section when this section comes into view
+  // Update active section with a short delay; clear the timer on unmount.
   useEffect(() => {
     if (inView) {
-      const timer = setTimeout(() => {
-        setActiveSection("services");
-      }, 100);
+      const timer = setTimeout(() => setActiveSection("services"), 50);
       return () => clearTimeout(timer);
     }
   }, [inView, setActiveSection]);
@@ -51,49 +61,48 @@ export default function ServicesSection() {
     }));
   };
 
-  const plans: Plan[] = [
-    {
-      name: "LaunchPad",
-      description: "Get online fast with a professional digital presence",
-      oneTimeTotalPrice: 500,
-      oneTimeServices: [
-        { name: "Website Design & Development", price: 100 },
-        { name: "Branding & Visual Identity", price: 50 },
-        { name: "Basic E-Commerce Setup", price: 150 },
-        { name: "Social Media Professional Setup", price: 100 },
-        { name: "Domain & Hosting Registration", price: 100 },
-      ],
-      subscriptionServices: ["SEO-Optimized Content", "Basic Automation & CRM"],
-      monthlyPricing: {
-        monthly: 120,
-        quarterly: 100,
-        yearly: 80,
+  // Memoize plans so that they are not recreated on every render.
+  const plans: Plan[] = useMemo(
+    () => [
+      {
+        name: "LaunchPad",
+        description: "Get online fast with a professional digital presence",
+        oneTimeTotalPrice: 500,
+        oneTimeServices: [
+          { name: "Website Design & Development", price: 100 },
+          { name: "Branding & Visual Identity", price: 50 },
+          { name: "Basic E-Commerce Setup", price: 150 },
+          { name: "Social Media Professional Setup", price: 100 },
+          { name: "Domain & Hosting Registration", price: 100 },
+        ],
+        subscriptionServices: [
+          "SEO-Optimized Content",
+          "Basic Automation & CRM",
+        ],
+        monthlyPricing: { monthly: 120, quarterly: 100, yearly: 80 },
+        isLight: true,
       },
-      isLight: true,
-    },
-    {
-      name: "Ignite",
-      description: "Scale, optimize, and automate your digital operations",
-      oneTimeTotalPrice: 1000,
-      oneTimeServices: [
-        { name: "Website Performance Optimization", price: 400 },
-        { name: "E-Commerce & Sales Optimization", price: 350 },
-        { name: "Security & Cloud Infrastructure", price: 150 },
-        { name: "Compliance & Privacy Enhancements", price: 100 },
-      ],
-      subscriptionServices: [
-        "Advanced Digital Marketing",
-        "Business Automation & CRM",
-        "Data Analytics & Insights",
-      ],
-      monthlyPricing: {
-        monthly: 180,
-        quarterly: 150,
-        yearly: 120,
+      {
+        name: "Ignite",
+        description: "Scale, optimize, and automate your digital operations",
+        oneTimeTotalPrice: 1000,
+        oneTimeServices: [
+          { name: "Website Performance Optimization", price: 400 },
+          { name: "E-Commerce & Sales Optimization", price: 350 },
+          { name: "Security & Cloud Infrastructure", price: 150 },
+          { name: "Compliance & Privacy Enhancements", price: 100 },
+        ],
+        subscriptionServices: [
+          "Advanced Digital Marketing",
+          "Business Automation & CRM",
+          "Data Analytics & Insights",
+        ],
+        monthlyPricing: { monthly: 180, quarterly: 150, yearly: 120 },
+        isLight: false,
       },
-      isLight: false,
-    },
-  ];
+    ],
+    []
+  );
 
   return (
     <section
@@ -101,9 +110,8 @@ export default function ServicesSection() {
       ref={ref}
       className="section-fullscreen snap-section bg-gradient-to-br from-purple-800 to-purple-900 flex flex-col items-center justify-center py-12 px-4 md:px-6 overflow-y-auto"
     >
-      <BackgroundAnimation withBlur={true} />
-
-      <div className="text-center mb-6 md:mb-8 relative z-10">
+      <BackgroundAnimation withBlur />
+      <div className="relative z-10 text-center mb-6 md:mb-8">
         <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-2">
           Plans & Pricing
         </h2>
@@ -112,8 +120,8 @@ export default function ServicesSection() {
         </p>
       </div>
 
-      <div className="flex space-x-2 bg-white/10 p-1.5 rounded-full mb-6 relative z-10">
-        {(["monthly", "quarterly", "yearly"] as const).map((period) => (
+      <div className="relative z-10 flex space-x-2 bg-white/10 p-1.5 rounded-full mb-6">
+        {PLAN_PERIODS.map((period) => (
           <button
             key={period}
             onClick={() => setSelectedPlan(period)}
@@ -128,7 +136,7 @@ export default function ServicesSection() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 md:gap-8 w-full max-w-5xl mx-auto relative z-10">
+      <div className="relative z-10 grid md:grid-cols-2 gap-6 md:gap-8 w-full max-w-5xl mx-auto">
         {plans.map((plan) => (
           <motion.div
             key={plan.name}
@@ -177,11 +185,10 @@ export default function ServicesSection() {
               </div>
             </div>
 
-            {/* Optional Subscription Services with toggle */}
             <div className="mb-4">
               <button
                 onClick={() => toggleOptionalServices(plan.name)}
-                className="flex items-center justify-between w-full text-left py-1"
+                className="w-full flex items-center justify-between text-left py-1"
                 aria-expanded={showOptionalServices[plan.name]}
               >
                 <h4 className="text-lg md:text-xl font-semibold">
@@ -189,9 +196,7 @@ export default function ServicesSection() {
                 </h4>
                 <svg
                   className={`w-4 h-4 transition-transform ${
-                    showOptionalServices[plan.name]
-                      ? "transform rotate-180"
-                      : ""
+                    showOptionalServices[plan.name] ? "rotate-180" : ""
                   }`}
                   fill="none"
                   viewBox="0 0 24 24"
@@ -205,14 +210,13 @@ export default function ServicesSection() {
                   />
                 </svg>
               </button>
-
               <motion.div
                 initial={false}
                 animate={{
                   height: showOptionalServices[plan.name] ? "auto" : 0,
                   opacity: showOptionalServices[plan.name] ? 1 : 0,
                 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: ANIM_DURATION }}
                 className="overflow-hidden"
               >
                 <div
@@ -232,7 +236,6 @@ export default function ServicesSection() {
               </motion.div>
             </div>
 
-            {/* Price display */}
             <div className="mb-4">
               <div className="text-3xl md:text-4xl font-bold">
                 ${plan.monthlyPricing[selectedPlan]}
@@ -246,11 +249,11 @@ export default function ServicesSection() {
             </div>
 
             <button
-              className={`w-full py-2.5 md:py-3 rounded-xl text-base md:text-lg font-semibold ${
+              className={`w-full py-2.5 md:py-3 rounded-xl text-base md:text-lg font-semibold transition-colors ${
                 plan.isLight
                   ? "bg-purple-700 text-white hover:bg-purple-800"
                   : "bg-white text-gray-900 hover:bg-gray-100"
-              } transition-colors`}
+              }`}
             >
               Get Started
             </button>
