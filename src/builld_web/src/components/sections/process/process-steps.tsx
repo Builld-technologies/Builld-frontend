@@ -30,18 +30,18 @@ const processCards: ProcessCardData[] = [
 ];
 
 const CARD_CONFIG = {
-  ACTIVE: { y: 0, x: 0, rotate: 0, opacity: 1, zIndex: 30, scale: 1 },
+  ACTIVE: { y: 0, x: 0, rotate: 0, zIndex: 30, scale: 1 },
   BASE_DISPLACEMENT: {
-    DESKTOP: { y: -500, x: 60, rotate: 15, opacity: 0.7, scale: 0.97 },
-    TABLET: { y: -480, x: 45, rotate: 15, opacity: 0.7, scale: 0.95 },
-    MOBILE: { y: -400, x: 30, rotate: 15, opacity: 0.7, scale: 0.9 },
+    DESKTOP: { y: -500, x: 60, rotate: 15, scale: 0.97 },
+    TABLET: { y: -480, x: 45, rotate: 15, scale: 0.95 },
+    MOBILE: { y: -400, x: 30, rotate: 15, scale: 0.9 },
   },
   MULTIPLIER: 2,
-  BEHIND: { offsetY: 15, offsetX: 10, rotate: -8, opacity: 0.4 },
+  BEHIND: { offsetY: 15, offsetX: 10, rotate: -8 },
   CARD_SIZES: {
     DESKTOP: { width: "432px", height: "423px", padding: "91px 48px" },
     TABLET: { width: "360px", height: "350px", padding: "60px 36px" },
-    MOBILE: { width: "200px", height: "200px", padding: "40px 24px" },
+    MOBILE: { width: "270px", height: "270px", padding: "40px 24px" },
   },
 };
 
@@ -80,7 +80,6 @@ export default function ProcessSteps() {
       y: base.y * MULTIPLIER,
       x: base.x * MULTIPLIER,
       rotate: base.rotate * MULTIPLIER,
-      opacity: Math.max(0.1, base.opacity - 0.2),
       zIndex: 50,
       scale: Math.max(0.8, base.scale - 0.05),
     };
@@ -126,51 +125,52 @@ export default function ProcessSteps() {
     }
   }, [activeIndex]);
 
-  // Compute card style transformations based on active index and card order.
+  // Compute card style transformations without opacity changes.
   const getCardStyles = (cardIndex: number) => {
     const { ACTIVE, BEHIND } = CARD_CONFIG;
+    // All cards will be fully opaque (opacity: 1) to avoid the glitch.
     if (activeIndex === 0) {
       return {
         y: 0,
         x: 0,
-        opacity: 1 - cardIndex * 0.2,
         rotate: cardIndex * -8,
         zIndex: 30 - cardIndex * 10,
         scale: 1,
+        opacity: 1,
       };
     }
     if (activeIndex === 1) {
-      if (cardIndex === 0) return { ...ACTIVE };
+      if (cardIndex === 0) return { ...ACTIVE, opacity: 1 };
       if (cardIndex === 1)
         return {
           y: BEHIND.offsetY,
           x: BEHIND.offsetX,
           rotate: BEHIND.rotate,
-          opacity: 1 - BEHIND.opacity,
           zIndex: ACTIVE.zIndex - 10,
           scale: 1,
+          opacity: 1,
         };
       if (cardIndex === 2)
         return {
           y: BEHIND.offsetY * 2,
           x: BEHIND.offsetX * 2,
           rotate: BEHIND.rotate * 2,
-          opacity: 1 - BEHIND.opacity * 2,
           zIndex: ACTIVE.zIndex - 20,
           scale: 1,
+          opacity: 1,
         };
     }
     if (activeIndex === 2) {
-      if (cardIndex === 0) return firstLevel;
-      if (cardIndex === 1) return { ...ACTIVE };
+      if (cardIndex === 0) return { ...firstLevel, opacity: 1 };
+      if (cardIndex === 1) return { ...ACTIVE, opacity: 1 };
       if (cardIndex === 2)
         return {
           y: BEHIND.offsetY,
           x: BEHIND.offsetX,
           rotate: BEHIND.rotate,
-          opacity: 1 - BEHIND.opacity,
           zIndex: ACTIVE.zIndex - 10,
           scale: 1,
+          opacity: 1,
         };
     }
     if (activeIndex === 3) {
@@ -180,21 +180,24 @@ export default function ProcessSteps() {
           ...secondLevel,
           y: secondLevel.y + dynamicExtraPushY,
           rotate: secondLevel.rotate + dynamicExtraRotate,
+          opacity: 1,
         };
       if (cardIndex === 1)
         return {
           ...firstLevel,
           y: firstLevel.y + dynamicExtraPushY,
           rotate: firstLevel.rotate + dynamicExtraRotate,
+          opacity: 1,
         };
       if (cardIndex === 2)
         return {
           ...ACTIVE,
           y: ACTIVE.y + dynamicExtraPushY,
           rotate: ACTIVE.rotate + dynamicExtraRotate,
+          opacity: 1,
         };
     }
-    return { x: 0, y: 0, rotate: 0, opacity: 0, zIndex: 0, scale: 1 };
+    return { x: 0, y: 0, rotate: 0, opacity: 1, zIndex: 0, scale: 1 };
   };
 
   return (
@@ -202,14 +205,15 @@ export default function ProcessSteps() {
       ref={sectionRef}
       className="w-full h-screen max-w-7xl mx-auto flex flex-col items-center justify-center relative overflow-hidden"
     >
-      <div className="absolute left-0 top-32 sm:top-48 md:top-64 z-50">
+      {/* Step Indicator */}
+      <div className="absolute left-4 md:left-0 top-32 sm:top-48 md:top-64 z-50">
         <AnimatePresence mode="wait">
           {activeIndex > 0 && activeIndex <= 3 && (
             <motion.div
               key={`step-${activeIndex}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold"
             >
@@ -219,6 +223,7 @@ export default function ProcessSteps() {
         </AnimatePresence>
       </div>
 
+      {/* Card Container */}
       <div className="h-screen flex items-center justify-center max-w-7xl w-full mx-auto">
         <div
           className="relative"
@@ -236,15 +241,14 @@ export default function ProcessSteps() {
                   zIndex: styles.zIndex,
                   transformOrigin: "center center",
                 }}
-                initial={{
-                  x: 0,
-                  y: 0,
-                  opacity: index === 0 ? 1 : 0.8 - index * 0.25,
-                  rotate: index * -8,
-                  scale: 1,
-                }}
+                // Remove initial opacity settings to prevent a fade effect.
                 animate={styles}
-                transition={{ type: "spring", stiffness: 75, damping: 22 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 75,
+                  damping: 22,
+                  opacity: { duration: 0 },
+                }}
               >
                 <div
                   className="w-full h-full flex flex-col justify-center items-center text-center rounded-[40px]"
@@ -270,6 +274,7 @@ export default function ProcessSteps() {
         </div>
       </div>
 
+      {/* Navigation Buttons */}
       <div className="absolute bottom-6 sm:bottom-8 md:bottom-10 lg:bottom-14 flex space-x-6 md:space-x-8 z-40">
         <button
           onClick={() => activeIndex > 1 && setActiveIndex(activeIndex - 1)}
@@ -300,14 +305,14 @@ export default function ProcessSteps() {
         </button>
       </div>
 
+      {/* Final Message */}
       <AnimatePresence>
         {showFinalMessage && (
           <motion.div
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 60 }}
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            // Push final message container up further so it doesn't overlap with cards.
             className="absolute bottom-40 sm:bottom-44 md:bottom-48 z-50"
           >
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-bold">

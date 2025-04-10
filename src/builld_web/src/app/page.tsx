@@ -1,11 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  ScrollProvider,
-  useScroll,
-  SectionType,
-} from "@/context/scroll-context";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { ScrollProvider, useScroll } from "@/context/scroll-context";
 import Header from "@/components/layout/header";
 import PageIndicator from "@/components/ui/page-indicator";
 import SplashScreen from "@/components/sections/splash-screen";
@@ -15,8 +11,11 @@ import ServicesSection from "@/components/sections/services-section";
 import ContactUs from "@/components/sections/contact-us";
 
 function HomeContent() {
-  const [splashComplete, setSplashComplete] = useState(false);
   const { setActiveSection } = useScroll();
+  const [splashComplete, setSplashComplete] = useState(false);
+  const [hideHeader, setHideHeader] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevScrollTop = useRef(0);
 
   // When splash screen completes, mark complete and set active section.
   const handleSplashComplete = useCallback(() => {
@@ -24,11 +23,34 @@ function HomeContent() {
     setActiveSection("hero");
   }, [setActiveSection]);
 
+  // Listen to scroll events on the scrollable container.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const currentScrollTop = container.scrollTop;
+      // Hide header when scrolling down (past 100px); show when scrolling up.
+      if (currentScrollTop > prevScrollTop.current && currentScrollTop > 100) {
+        setHideHeader(true);
+      } else if (currentScrollTop < prevScrollTop.current) {
+        setHideHeader(false);
+      }
+      prevScrollTop.current = currentScrollTop;
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <div className="relative h-screen overflow-hidden">
-      {splashComplete && <Header />}
+      {splashComplete && <Header hideHeader={hideHeader} />}
       {splashComplete && <PageIndicator />}
-      <div className="h-screen overflow-y-auto scroll-smooth snap-y snap-mandatory">
+      <div
+        ref={scrollContainerRef}
+        className="h-screen overflow-y-auto scroll-smooth snap-y snap-mandatory"
+      >
         <SplashScreen onComplete={handleSplashComplete} />
         <HeroAndAboutSections />
         <ProcessSection />

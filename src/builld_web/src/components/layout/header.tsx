@@ -6,33 +6,35 @@ import Logo from "@/components/ui/logo";
 import Navigation from "@/components/ui/navigation";
 import { useScroll } from "@/context/scroll-context";
 
-export default function Header() {
+interface HeaderProps {
+  hideHeader: boolean;
+}
+
+export default function Header({ hideHeader }: HeaderProps) {
   const { activeSection } = useScroll();
-  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shouldRender, setShouldRender] = useState(true);
 
+  // Only render header if activeSection isn't "splash"
   useEffect(() => {
     setShouldRender(activeSection !== "splash");
   }, [activeSection]);
 
+  // Handle resize events for mobile menu.
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
     const handleResize = () => {
       if (window.innerWidth >= 768) setMenuOpen(false);
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Toggle mobile menu.
   const toggleMenu = useCallback(() => {
     setMenuOpen((prev) => !prev);
   }, []);
 
+  // Close mobile menu if clicking outside.
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -50,14 +52,22 @@ export default function Header() {
 
   if (!shouldRender) return null;
 
+  // Motion variants for header opacity.
+  const headerVariants = {
+    visible: { opacity: 1, transition: { duration: 0.3 } },
+    hidden: { opacity: 0, transition: { duration: 0.3 } },
+  };
+
   return (
     <motion.header
-      className={`fixed top-0 left-0 right-0 z-50 p-4 sm:p-5 md:p-6 lg:px-10 transition-all duration-300 ${
-        scrolled || menuOpen ? "bg-black/80 backdrop-blur-lg" : "bg-transparent"
+      // Use semantic <header> element.
+      className={`fixed top-0 left-0 right-0 z-50 p-4 sm:p-5 md:p-6 lg:px-10 transition-colors duration-300 ${
+        menuOpen ? "bg-black/80 backdrop-blur-lg" : "bg-transparent"
       }`}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      initial="visible"
+      animate={hideHeader ? "hidden" : "visible"}
+      variants={headerVariants}
+      style={{ pointerEvents: hideHeader ? "none" : "auto" }}
     >
       <div className="flex justify-between items-center max-w-7xl w-full mx-auto">
         <Logo />
@@ -101,6 +111,7 @@ export default function Header() {
         </div>
       </div>
       <motion.nav
+        // Use semantic <nav> element.
         initial={{ height: 0, opacity: 0 }}
         animate={{
           height: menuOpen ? "auto" : 0,
