@@ -261,10 +261,10 @@ export default function ProcessSteps() {
                       "0px 0px 20px 0px rgba(255, 255, 255, 0.4) inset",
                   }}
                 >
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 md:mb-6">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-normal mb-4 md:mb-6">
                     {card.title}
                   </h3>
-                  <p className="text-sm sm:text-base md:text-lg text-white/80">
+                  <p className="text-sm sm:text-base md:text-lg font-light text-white/80">
                     {card.description}
                   </p>
                 </div>

@@ -103,7 +103,7 @@ export default function HeroAndAboutSections() {
               variants={staggerChildren}
             >
               <motion.h1
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 sm:mb-6"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight mb-4 sm:mb-6"
                 variants={staggerChildren}
               >
                 <motion.div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-5">
@@ -159,7 +159,7 @@ export default function HeroAndAboutSections() {
                 </motion.div>
               </motion.h1>
               <motion.p
-                className="text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mt-4 sm:mt-5 md:mt-6"
+                className="text-base sm:text-lg md:text-xl font-light text-gray-200 max-w-2xl mx-auto mt-4 sm:mt-5 md:mt-6"
                 variants={fadeUpVariant}
               >
                 High-quality websites and digital products,
@@ -177,7 +177,7 @@ export default function HeroAndAboutSections() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <span className="text-white text-base sm:text-lg font-medium">
+                <span className="text-white text-base sm:text-lg font-light">
                   Let&apos;s build
                 </span>
                 <div className="bg-[#b0ff00] rounded-full p-1.5 sm:p-2 ml-2 sm:ml-3 transition-transform duration-300 group-hover:translate-x-1">
@@ -241,7 +241,7 @@ export default function HeroAndAboutSections() {
                 </div>
               </motion.div>
               <motion.h2
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 text-white leading-tight tracking-wide"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal mb-4 sm:mb-6 md:mb-8 text-white leading-tight tracking-wide"
                 variants={fadeUpVariant}
               >
                 Transform Ideas
@@ -249,7 +249,7 @@ export default function HeroAndAboutSections() {
                 into Digital Solutions
               </motion.h2>
               <motion.p
-                className="text-sm sm:text-base md:text-lg max-w-2xl text-gray-200 opacity-90 leading-relaxed"
+                className="text-sm sm:text-base md:text-lg font-light max-w-2xl text-gray-200 opacity-90 leading-relaxed"
                 variants={fadeUpVariant}
               >
                 We&apos;re your tech partner, turning ideas into functional

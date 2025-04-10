@@ -112,7 +112,7 @@ export default function ProcessIntro() {
           </motion.div>
 
           <motion.h2
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 text-white leading-tight tracking-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal mb-4 sm:mb-6 md:mb-8 text-white leading-tight tracking-tight"
             variants={fadeUpVariant}
             custom={0.1}
           >
@@ -121,7 +121,7 @@ export default function ProcessIntro() {
           </motion.h2>
 
           <motion.p
-            className="text-sm sm:text-base md:text-lg max-w-2xl text-gray-200 opacity-90 leading-relaxed"
+            className="text-sm sm:text-base md:text-lg font-light max-w-2xl text-gray-200 opacity-90 leading-relaxed"
             variants={fadeUpVariant}
             custom={0.2}
           >

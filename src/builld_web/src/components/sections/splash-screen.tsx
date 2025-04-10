@@ -3,6 +3,20 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import localFont from "next/font/local";
+
+// Load your local Doubleplus font (OTF)
+const doubleplus = localFont({
+  src: [
+    {
+      path: "../../../public/fonts/Doubleplus.otf",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+  variable: "--font-doubleplus",
+  display: "swap",
+});
 
 interface SplashScreenProps {
   onComplete?: () => void;
@@ -62,7 +76,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+      className={`${doubleplus.className} fixed inset-0 z-50 flex items-center justify-center bg-black`}
       initial={{ y: 0 }}
       animate={{ y: isExiting ? "-100%" : 0 }}
       transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
