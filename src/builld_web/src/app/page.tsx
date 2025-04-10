@@ -14,13 +14,18 @@ function HomeContent() {
   const { setActiveSection } = useScroll();
   const [splashComplete, setSplashComplete] = useState(false);
   const [hideHeader, setHideHeader] = useState(false);
+  // New state: once splash is complete, wait 0.5 sec then trigger hero reveal animations.
+  const [startReveal, setStartReveal] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevScrollTop = useRef(0);
 
-  // When splash screen completes, mark complete and set active section.
+  // When splash screen completes, mark complete, set active section, and trigger reveal after 0.5 sec.
   const handleSplashComplete = useCallback(() => {
     setSplashComplete(true);
     setActiveSection("hero");
+    setTimeout(() => {
+      setStartReveal(true);
+    }, 500);
   }, [setActiveSection]);
 
   // Listen to scroll events on the scrollable container.
@@ -52,7 +57,7 @@ function HomeContent() {
         className="h-screen overflow-y-auto scroll-smooth snap-y snap-mandatory"
       >
         <SplashScreen onComplete={handleSplashComplete} />
-        <HeroAndAboutSections />
+        <HeroAndAboutSections startReveal={startReveal} />
         <ProcessSection />
         <ServicesSection />
         <ContactUs />

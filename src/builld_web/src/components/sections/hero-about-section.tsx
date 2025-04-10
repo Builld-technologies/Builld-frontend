@@ -11,18 +11,16 @@ import BackgroundAnimation from "../ui/background-animation";
 const ANIMATION_DURATION = 0.4;
 const STAGGER_DELAY = 0.1;
 
+// Variant for individual items.
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 30 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: ANIMATION_DURATION, delay },
-  }),
+  visible: { opacity: 1, y: 0, transition: { duration: ANIMATION_DURATION } },
 };
 
-const staggerChildren = {
+// Parent container variant with delay for children.
+const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: STAGGER_DELAY } },
+  visible: { transition: { delayChildren: 0, staggerChildren: STAGGER_DELAY } },
 };
 
 const useWindowWidth = () => {
@@ -37,7 +35,13 @@ const useWindowWidth = () => {
   return width;
 };
 
-export default function HeroAndAboutSections() {
+interface HeroAndAboutSectionsProps {
+  startReveal: boolean;
+}
+
+export default function HeroAndAboutSections({
+  startReveal,
+}: HeroAndAboutSectionsProps) {
   const { setActiveSection } = useScroll();
   const windowWidth = useWindowWidth();
   const [heroRef, heroInView] = useInView({ threshold: 0.6 });
@@ -96,15 +100,16 @@ export default function HeroAndAboutSections() {
         <BackgroundAnimation />
         <div className="max-w-7xl w-full px-4 sm:px-6 md:px-10 mx-auto relative z-10">
           <div className="flex flex-col items-center text-center">
+            {/* Use the startReveal prop to control animation */}
             <motion.div
               className="mb-6 sm:mb-8 md:mb-10"
               initial="hidden"
-              animate={heroInView ? "visible" : "hidden"}
-              variants={staggerChildren}
+              animate={startReveal ? "visible" : "hidden"}
+              variants={staggerContainer}
             >
               <motion.h1
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight mb-4 sm:mb-6"
-                variants={staggerChildren}
+                variants={staggerContainer}
               >
                 <motion.div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-5">
                   <motion.span variants={fadeUpVariant}>Build</motion.span>
@@ -142,7 +147,7 @@ export default function HeroAndAboutSections() {
                 </motion.div>
                 <motion.div
                   className="mt-2 sm:mt-3 md:mt-4 flex flex-wrap items-center justify-center"
-                  variants={staggerChildren}
+                  variants={staggerContainer}
                 >
                   <motion.span
                     className="text-[#b0ff00]"
@@ -169,7 +174,7 @@ export default function HeroAndAboutSections() {
             <motion.div
               variants={fadeUpVariant}
               initial="hidden"
-              animate={heroInView ? "visible" : "hidden"}
+              animate={startReveal ? "visible" : "hidden"}
               className="mt-4 sm:mt-5 md:mt-6"
             >
               <motion.button
@@ -226,7 +231,7 @@ export default function HeroAndAboutSections() {
               </div>
             </motion.div>
             <motion.div
-              variants={staggerChildren}
+              variants={staggerContainer}
               initial="hidden"
               animate={aboutInView ? "visible" : "hidden"}
               className="md:col-span-8 flex flex-col"
@@ -235,7 +240,7 @@ export default function HeroAndAboutSections() {
                 className="text-xs sm:text-sm mb-6 sm:mb-8 md:mb-10 opacity-70"
                 variants={fadeUpVariant}
               >
-                <div className="flex items-center justify-center md:justify-start">
+                <div className="flex items-center justify-start">
                   <div className="w-6 sm:w-8 h-px bg-white mr-2"></div>
                   About us
                 </div>

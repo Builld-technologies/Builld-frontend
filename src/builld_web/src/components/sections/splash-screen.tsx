@@ -101,7 +101,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         <div className="absolute right-6 sm:right-8 md:right-12 top-[-24px] sm:top-[-26px] md:top-[-30px]">
           <motion.div
             key={milestones[currentMilestone]}
-            className="text-white text-base sm:text-lg md:text-xl font-bold"
+            className="text-white text-base sm:text-lg md:text-2xl font-bold"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
