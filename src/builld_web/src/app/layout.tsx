@@ -1,19 +1,33 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Lexend } from 'next/font/google';
+import { ToastProvider } from '@/components/ui/toast';
+import ErrorBoundary from '@/components/ui/error-boundary';
+import './globals.css';
+import { Analytics } from '@vercel/analytics/react';
+
+// Load Lexend font
+const lexend = Lexend({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+});
 
 export const metadata: Metadata = {
-  title: "Builld | Fast-Track Your Ideas into Reality",
+  title: 'Builld | Fast-Track Your Ideas into Reality',
   description:
-    "High-quality websites and digital products, delivered in weeks — not months.",
-  keywords: "web development, digital products, fast development, websites",
-  themeColor: "#a0ff00",
+    'High-quality websites and digital products, delivered in weeks — not months.',
+  keywords: 'web development, digital products, fast development, websites',
   openGraph: {
-    type: "website",
-    title: "Builld | Fast-Track Your Ideas into Reality",
+    type: 'website',
+    title: 'Builld | Fast-Track Your Ideas into Reality',
     description:
-      "High-quality websites and digital products, delivered in weeks — not months.",
-    siteName: "Builld",
+      'High-quality websites and digital products, delivered in weeks — not months.',
+    siteName: 'Builld',
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#a0ff00',
 };
 
 export default function RootLayout({
@@ -22,21 +36,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <meta name="apple-mobile-web-app-title" content="Builld" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Lexend:wght@100;200;300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="antialiased">{children}</body>
+    <html lang="en" className={lexend.className}>
+      <body>
+        <ErrorBoundary>
+          <ToastProvider>
+            {children}
+            <Analytics />
+          </ToastProvider>
+        </ErrorBoundary>
+      </body>
     </html>
   );
 }

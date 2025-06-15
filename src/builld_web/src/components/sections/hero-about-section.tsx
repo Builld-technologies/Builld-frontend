@@ -1,37 +1,55 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
-import { FaArrowRight } from "react-icons/fa";
-import { useInView } from "react-intersection-observer";
-import { useScroll } from "../../context/scroll-context";
-import BackgroundAnimation from "../ui/background-animation";
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { FaArrowRight } from 'react-icons/fa';
+import { useInView } from 'react-intersection-observer';
+import { useScroll, SectionType } from '../../context/scroll-context';
 
 const ANIMATION_DURATION = 0.4;
 const STAGGER_DELAY = 0.1;
 
-// Variant for individual items.
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: ANIMATION_DURATION } },
 };
 
-// Parent container variant with delay for children.
 const staggerContainer = {
   hidden: {},
   visible: { transition: { delayChildren: 0, staggerChildren: STAGGER_DELAY } },
 };
 
+// Type-safe window width hook with proper cleanup
 const useWindowWidth = () => {
   const [width, setWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1200
+    typeof window !== 'undefined' ? window.innerWidth : 1200
   );
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const handleResize = () => setWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const handleResize = () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+
+      timerRef.current = setTimeout(() => {
+        setWidth(window.innerWidth);
+        timerRef.current = null;
+      }, 100);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      };
+    }
   }, []);
+
   return width;
 };
 
@@ -42,16 +60,31 @@ interface HeroAndAboutSectionsProps {
 export default function HeroAndAboutSections({
   startReveal,
 }: HeroAndAboutSectionsProps) {
-  const { setActiveSection } = useScroll();
+  const { setActiveSection, scrollToSection } = useScroll();
   const windowWidth = useWindowWidth();
-  const [heroRef, heroInView] = useInView({ threshold: 0.6 });
-  const [aboutRef, aboutInView] = useInView({ threshold: 0.6 });
+  const [heroRef, heroInView] = useInView({
+    threshold: 0.6,
+    triggerOnce: false,
+    initialInView: false,
+  });
+  const [aboutRef, aboutInView] = useInView({
+    threshold: 0.6,
+    triggerOnce: false,
+    initialInView: false,
+  });
 
+  const prevSectionRef = useRef<string | null>(null);
   useEffect(() => {
+    let newSection: SectionType | null = null;
     if (heroInView) {
-      setActiveSection("hero");
+      newSection = 'hero';
     } else if (aboutInView) {
-      setActiveSection("about");
+      newSection = 'about';
+    }
+
+    if (newSection && newSection !== prevSectionRef.current) {
+      setActiveSection(newSection);
+      prevSectionRef.current = newSection;
     }
   }, [heroInView, aboutInView, setActiveSection]);
 
@@ -65,52 +98,53 @@ export default function HeroAndAboutSections({
   const aboutLogoSize = useMemo(() => {
     if (windowWidth < 640) {
       return {
-        containerSize: "w-40 h-40",
+        containerSize: 'w-40 h-40',
         logoSize: { width: 80, height: 80 },
-        roundedSize: "rounded-[50px]",
+        roundedSize: 'rounded-[50px]',
       };
     } else if (windowWidth < 768) {
       return {
-        containerSize: "w-48 h-48",
+        containerSize: 'w-48 h-48',
         logoSize: { width: 100, height: 100 },
-        roundedSize: "rounded-[60px]",
+        roundedSize: 'rounded-[60px]',
       };
     } else if (windowWidth < 1024) {
       return {
-        containerSize: "w-56 h-56",
+        containerSize: 'w-56 h-56',
         logoSize: { width: 110, height: 110 },
-        roundedSize: "rounded-[70px]",
+        roundedSize: 'rounded-[70px]',
       };
     } else {
       return {
-        containerSize: "w-60 h-60",
+        containerSize: 'w-60 h-60',
         logoSize: { width: 120, height: 120 },
-        roundedSize: "rounded-[80px]",
+        roundedSize: 'rounded-[80px]',
       };
     }
   }, [windowWidth]);
 
   return (
     <>
+      {' '}
       <section
         id="section-hero"
         ref={heroRef}
-        className="section-fullscreen snap-section gradient-bg flex items-center justify-center relative"
+        className="section-fullscreen z-10 snap-section gradient-bg flex items-center justify-center relative"
       >
-        <BackgroundAnimation />
         <div className="max-w-7xl w-full px-4 sm:px-6 md:px-10 mx-auto relative z-10">
           <div className="flex flex-col items-center text-center">
-            {/* Use the startReveal prop to control animation */}
             <motion.div
               className="mb-6 sm:mb-8 md:mb-10"
               initial="hidden"
-              animate={startReveal ? "visible" : "hidden"}
+              animate={startReveal ? 'visible' : 'hidden'}
               variants={staggerContainer}
             >
+              {' '}
               <motion.h1
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight mb-4 sm:mb-6"
                 variants={staggerContainer}
               >
+                {' '}
                 <motion.div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 lg:gap-5">
                   <motion.span variants={fadeUpVariant}>Build</motion.span>
                   <motion.div
@@ -119,27 +153,38 @@ export default function HeroAndAboutSections({
                       visible: {
                         opacity: 1,
                         scale: 1,
-                        transition: { duration: ANIMATION_DURATION },
+                        transition: {
+                          duration: ANIMATION_DURATION,
+                          delay: 0.1,
+                        },
                       },
                     }}
                     className="relative inline-flex"
+                    style={{ transform: 'translateZ(0)' }}
                   >
+                    {' '}
                     <div
-                      className="flex items-center justify-center rounded-3xl"
+                      className="flex items-center w-12 h-12 md:w-20 md:h-20 justify-center rounded-2xl md:rounded-3xl border border-white/10"
                       style={{
-                        width: "5rem",
-                        height: "5rem",
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
-                        backdropFilter: "blur(66.67px)",
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(66.67px)',
+                        transform: 'translateZ(0)',
+                        minWidth: '48px',
+                        minHeight: '48px',
                       }}
                     >
+                      {' '}
                       <Image
                         src="/images/L.png"
                         alt="Logo"
                         width={logoSize.width}
                         height={logoSize.height}
-                        className="object-contain p-2"
+                        className="object-contain"
                         priority
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                        }}
                       />
                     </div>
                   </motion.div>
@@ -174,13 +219,15 @@ export default function HeroAndAboutSections({
             <motion.div
               variants={fadeUpVariant}
               initial="hidden"
-              animate={startReveal ? "visible" : "hidden"}
+              animate={startReveal ? 'visible' : 'hidden'}
               className="mt-4 sm:mt-5 md:mt-6"
             >
               <motion.button
-                className="relative bg-transparent border-2 border-[#b0ff00] rounded-full px-6 sm:px-7 md:px-9 py-2.5 sm:py-3 md:py-3.5 flex items-center group overflow-hidden hover:bg-[#b0ff00]/10 transition-colors duration-300"
+                onClick={() => scrollToSection('contact')}
+                className="relative bg-transparent cursor-pointer border-2 border-[#b0ff00] rounded-full px-6 sm:px-7 md:px-9 py-2.5 sm:py-3 md:py-3.5 flex items-center group overflow-hidden hover:bg-[#b0ff00]/10 transition-colors duration-300"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
+                style={{ transform: 'translateZ(0)' }}
               >
                 <span className="text-white text-base sm:text-lg font-light">
                   Let&apos;s build
@@ -193,13 +240,26 @@ export default function HeroAndAboutSections({
           </div>
         </div>
       </section>
-
       <section
         id="section-about"
         ref={aboutRef}
-        className="relative section-fullscreen snap-section min-h-screen w-full overflow-hidden"
+        className="relative section-fullscreen z-30 snap-section min-h-screen w-full overflow-hidden"
       >
-        <BackgroundAnimation withBlur={true} />
+        {' '}
+        <motion.div
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          style={{
+            zIndex: 2,
+            backdropFilter: 'blur(100px)',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            willChange: 'opacity',
+            transform: 'translate3d(0, 0, 0)',
+            backfaceVisibility: 'hidden',
+          }}
+        />
         <div className="max-w-7xl w-full px-4 sm:px-6 md:px-0 mx-auto relative z-10 py-10 sm:py-16 md:py-20">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
             <motion.div
@@ -211,13 +271,14 @@ export default function HeroAndAboutSections({
               }
               transition={{ duration: ANIMATION_DURATION }}
               className="md:col-span-4 flex justify-center md:justify-start"
+              style={{ transform: 'translateZ(0)' }}
             >
               <div
                 className={`${aboutLogoSize.containerSize} flex items-center justify-center ${aboutLogoSize.roundedSize} transform -rotate-45`}
                 style={{
-                  padding: "40px",
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  backdropFilter: "blur(200px)",
+                  padding: '40px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(200px)',
                 }}
               >
                 <Image
@@ -226,14 +287,14 @@ export default function HeroAndAboutSections({
                   width={aboutLogoSize.logoSize.width}
                   height={aboutLogoSize.logoSize.height}
                   className="object-contain"
-                  quality={100}
+                  quality={90}
                 />
               </div>
             </motion.div>
             <motion.div
               variants={staggerContainer}
               initial="hidden"
-              animate={aboutInView ? "visible" : "hidden"}
+              animate={aboutInView ? 'visible' : 'hidden'}
               className="md:col-span-8 flex flex-col"
             >
               <motion.div
