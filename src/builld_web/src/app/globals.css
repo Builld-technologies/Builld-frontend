@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Define your custom properties */
 :root {
@@ -10,11 +10,9 @@
   --gradient-middle: #0a0a20;
   --gradient-end: #000000;
 
-  /* Map theme variables directly */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Define the font-sans variable using Lexend */
-  --font-sans: "Lexend", sans-serif;
+  --font-sans: 'Lexend', sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,6 +20,13 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -65,6 +70,8 @@ html {
 .fade-in {
   opacity: 0;
   animation: fadeIn 0.8s ease forwards;
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
 @keyframes fadeIn {
@@ -86,6 +93,8 @@ html {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* For smoother section transitions */
@@ -94,13 +103,34 @@ html {
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
 }
 
 .snap-section {
   scroll-snap-align: start;
   scroll-snap-stop: always;
+  will-change: transform;
 }
 
 .scroll-lock {
   overscroll-behavior: none;
+  touch-action: none;
+}
+
+/* Add performance optimizations for animations */
+.will-change-transform {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Optimize for mobile devices */
+@media (max-width: 768px) {
+  .smooth-scroll-container {
+    scroll-snap-type: y proximity;
+  }
 }
