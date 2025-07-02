@@ -12,6 +12,7 @@ export interface BackgroundAnimationProps {
   opacity?: number;
 }
 
+// Wrap component with dynamic import to avoid SSR issues
 export default function BackgroundAnimation({
   animationData = gradientBg,
   withBlur = false,
@@ -23,9 +24,13 @@ export default function BackgroundAnimation({
   const lottieRef = useRef<LottieRefCurrentProps>(null);
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Only run effect on client-side
   useEffect(() => {
     // Ensure this code only runs on the client
     setMounted(true);
+
+    // Skip the rest of the effect during SSR
+    if (typeof window === 'undefined') return;
 
     const handleResize = () => {
       // Debounce resize events to prevent flickering
@@ -82,6 +87,7 @@ export default function BackgroundAnimation({
   }, []); // Empty dependency array to run only once
 
   if (!mounted) return null;
+
   return (
     <>
       <motion.div
@@ -96,24 +102,27 @@ export default function BackgroundAnimation({
           backfaceVisibility: 'hidden', // Prevent flickering
         }}
       >
-        <Lottie
-          lottieRef={lottieRef}
-          animationData={animationData}
-          autoplay={!isMobile}
-          loop={!isMobile}
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            transform: 'translate3d(0, 0, 0)',
-            backfaceVisibility: 'hidden',
-          }}
-          rendererSettings={{
-            preserveAspectRatio: 'xMidYMid slice',
-          }}
-        />
+        {/* Only render Lottie when mounted and window is available */}
+        {mounted && typeof window !== 'undefined' && (
+          <Lottie
+            lottieRef={lottieRef}
+            animationData={animationData}
+            autoplay={!isMobile}
+            loop={!isMobile}
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              transform: 'translate3d(0, 0, 0)',
+              backfaceVisibility: 'hidden',
+            }}
+            rendererSettings={{
+              preserveAspectRatio: 'xMidYMid slice',
+            }}
+          />
+        )}
       </motion.div>
 
       <div
