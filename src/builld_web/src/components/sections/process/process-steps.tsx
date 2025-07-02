@@ -54,12 +54,16 @@ export default function ProcessSteps() {
     'intro' | 'cards' | 'finale'
   >('intro');
   const [showFinalMessage, setShowFinalMessage] = useState(false);
-
+  // New states for enhanced user experience
+  const [isFirstView, setIsFirstView] = useState(true);
+  const [userInteracted, setUserInteracted] = useState(false);
   // Intersection observer for section visibility
   const [ref, inView] = useInView({
-    threshold: 0.1,
+    threshold: 0.3, // Increased threshold for better timing
     triggerOnce: false,
-  }); // Handle mounting and window resize - single effect to prevent conflicts
+  });
+
+  // Handle mounting and window resize - single effect to prevent conflicts
   useEffect(() => {
     setIsMounted(true);
 
@@ -75,21 +79,31 @@ export default function ProcessSteps() {
   // Handle section visibility and reset state
   useEffect(() => {
     if (!isMounted) return;
-
     if (!inView) {
       setActiveIndex(1);
       setAnimationPhase('intro');
       setShowFinalMessage(false);
+      setIsFirstView(true); // Reset autoplay state so it restarts on re-entry
+      setUserInteracted(false); // Reset user interaction state
     } else {
-      // Start intro phase when section comes into view
+      // Always restart autoplay when section comes into view
+      setActiveIndex(1);
+      setAnimationPhase('intro');
+      setShowFinalMessage(false);
+      setIsFirstView(true);
+      setUserInteracted(false);
+      // Start animation after brief delay
       const timer = setTimeout(() => {
         setAnimationPhase('cards');
-      }, 500);
-      return () => clearTimeout(timer);
+      }, 1000); // Brief delay before starting
+
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [inView, isMounted]);
 
-  // Auto-progress through cards
+  // Auto-progress through cards - FIXED to ensure final message shows
   useEffect(() => {
     if (!isMounted || !inView || animationPhase !== 'cards') return;
 
@@ -98,16 +112,47 @@ export default function ProcessSteps() {
         if (prev < 3) {
           return prev + 1;
         } else {
-          // Move to finale after last card
+          // Move to finale after last card and show final message immediately
           setAnimationPhase('finale');
-          setShowFinalMessage(true);
+          setTimeout(() => {
+            setShowFinalMessage(true);
+          }, 500); // Short delay to ensure smooth transition
+
+          if (isFirstView) {
+            setIsFirstView(false);
+          }
           return prev;
         }
       });
-    }, 3000);
+    }, 2500); // Card progression timing
 
     return () => clearInterval(interval);
-  }, [inView, animationPhase, isMounted]);
+  }, [inView, animationPhase, isMounted, isFirstView]);
+
+  // Manual control functions
+  const handleCardClick = useCallback(
+    (index: number) => {
+      setUserInteracted(true);
+      const newIndex = index + 1;
+      setActiveIndex(newIndex);
+
+      // If clicking on the last card, show final message after a delay
+      if (newIndex === 3) {
+        setTimeout(() => {
+          setAnimationPhase('finale');
+          setTimeout(() => {
+            setShowFinalMessage(true);
+          }, 500);
+        }, 1500); // Give time to view the last card
+      }
+
+      if (isFirstView) {
+        setIsFirstView(false);
+      }
+    },
+    [isFirstView]
+  );
+
   // Memoized calculations - stable order and dependencies
   const getBaseDisplacement = useCallback(() => {
     const { DESKTOP, TABLET, MOBILE } = CARD_CONFIG.BASE_DISPLACEMENT;
@@ -116,12 +161,23 @@ export default function ProcessSteps() {
     return DESKTOP;
   }, [windowWidth]);
 
+  // Responsive card sizing using Tailwind breakpoints and fluid values
   const cardSizing = useMemo(() => {
-    const { DESKTOP, TABLET, MOBILE } = CARD_CONFIG.CARD_SIZES;
-    if (windowWidth < 768) return MOBILE;
-    if (windowWidth < 1024) return TABLET;
-    return DESKTOP;
+    if (windowWidth < 400) {
+      return { width: '96vw', height: '62vw', padding: '16px 6px' };
+    }
+    if (windowWidth < 640) {
+      return { width: '98vw', height: '75vw', padding: '20px 8px' };
+    }
+    if (windowWidth < 768) {
+      return { width: '350px', height: '270px', padding: '28px 12px' };
+    }
+    if (windowWidth < 1024) {
+      return { width: '380px', height: '360px', padding: '48px 20px' };
+    }
+    return { width: '432px', height: '423px', padding: '91px 48px' };
   }, [windowWidth]);
+
   const cardStyles = useMemo(() => {
     // Fixed background color with no transparency
     const cardBackgroundColor = '#333434';
@@ -159,7 +215,9 @@ export default function ProcessSteps() {
       zIndex: 50,
       scale: Math.max(0.8, base.scale - 0.05),
     };
-  }, [getBaseDisplacement]); // Card positioning logic - Fixed background color, no opacity effects
+  }, [getBaseDisplacement]);
+
+  // Card positioning logic - Fixed background color, no opacity effects
   const getCardStyles = useCallback(
     (cardIndex: number) => {
       const { dynamicExtraPushY, dynamicExtraRotate } = cardStyles;
@@ -250,10 +308,11 @@ export default function ProcessSteps() {
       <div className="w-full h-dvh max-w-7xl mx-auto flex flex-col items-center justify-center relative overflow-hidden" />
     );
   }
+
   return (
     <motion.div
       ref={ref}
-      className="w-full h-dvh max-w-7xl mx-auto flex flex-col items-center justify-center relative overflow-hidden"
+      className="w-full h-dvh max-w-7xl mx-auto flex flex-col items-center justify-center relative overflow-hidden outline-none border-none focus:outline-none"
       initial={{ opacity: 0, y: 20 }}
       animate={{
         opacity: inView ? 1 : 0,
@@ -261,11 +320,12 @@ export default function ProcessSteps() {
       }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
       suppressHydrationWarning
+      style={{ outline: 'none', border: 'none' }}
     >
       {/* Step Indicator with Progress */}
-      <div className="absolute left-4 md:left-0 top-32 sm:top-48 md:top-64 z-50">
+      <div className="absolute left-1/2 -translate-x-1/2 top-24 sm:top-32 md:left-0 md:translate-x-0 md:top-64 z-50 outline-none border-none">
         <AnimatePresence mode="wait">
-          {activeIndex > 0 && activeIndex <= 3 && (
+          {activeIndex > 0 && activeIndex <= 3 && !showFinalMessage && (
             <motion.div
               key={`step-${activeIndex}`}
               initial={{ y: 20, opacity: 0 }}
@@ -278,128 +338,159 @@ export default function ProcessSteps() {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* Progress Dots */}
-        <div className="flex space-x-2 mt-4">
-          {[1, 2, 3].map(step => (
+
+        {/* Progress Dots - Hide when final message shows */}
+        {!showFinalMessage && (
+          <div className="flex space-x-2 mt-4">
+            {[1, 2, 3].map(step => (
+              <motion.div
+                key={step}
+                className={`w-2 h-2 rounded-full ${
+                  step <= activeIndex ? 'bg-[#b0ff00]' : 'bg-white/30'
+                }`}
+                initial={{ scale: 0 }}
+                animate={{
+                  scale: step <= activeIndex ? 1 : 0.7,
+                  backgroundColor:
+                    step <= activeIndex
+                      ? '#b0ff00'
+                      : 'rgba(255, 255, 255, 0.3)',
+                }}
+                transition={{ duration: 0.3, delay: step * 0.1 }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Auto-progress indicator - Hide when final message shows */}
+        {isMounted &&
+          animationPhase === 'cards' &&
+          activeIndex <= 3 &&
+          !showFinalMessage && (
             <motion.div
-              key={step}
-              className={`w-2 h-2 rounded-full ${
-                step <= activeIndex ? 'bg-[#b0ff00]' : 'bg-white/30'
-              }`}
-              initial={{ scale: 0 }}
-              animate={{
-                scale: step <= activeIndex ? 1 : 0.7,
-                backgroundColor:
-                  step <= activeIndex ? '#b0ff00' : 'rgba(255, 255, 255, 0.3)',
-              }}
-              transition={{ duration: 0.3, delay: step * 0.1 }}
-            />
-          ))}
-        </div>{' '}
-        {/* Auto-progress indicator */}
-        {isMounted && animationPhase === 'cards' && activeIndex <= 3 && (
+              className="w-16 h-1 bg-white/20 rounded-full mt-3 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <motion.div
+                key={`progress-${activeIndex}`}
+                className="h-full bg-[#b0ff00] rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{
+                  duration: 2.5,
+                  ease: 'linear',
+                }}
+              />
+            </motion.div>
+          )}
+
+        {/* Simple Instructions - Hide when final message shows */}
+        {isMounted &&
+          animationPhase === 'cards' &&
+          !userInteracted &&
+          !showFinalMessage && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.5 }}
+              className="text-xs text-white/50 mt-3 max-w-16 text-center"
+            >
+              Auto-playing
+            </motion.p>
+          )}
+      </div>
+
+      {/* Card Container - Hide when final message shows */}
+      <AnimatePresence>
+        {!showFinalMessage && (
           <motion.div
-            className="w-16 h-1 bg-white/20 rounded-full mt-3 overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5 }}
+            className="h-[100svh] min-h-[100svh] flex items-center justify-center max-w-7xl w-full mx-auto px-0 sm:px-2 md:px-4 overflow-x-hidden"
           >
-            <motion.div
-              key={`progress-${activeIndex}`}
-              className="h-full bg-[#b0ff00] rounded-full"
-              initial={{ width: '0%' }}
-              animate={{ width: '100%' }}
-              transition={{
-                duration: 3,
-                ease: 'linear',
-              }}
-            />
+            <div
+              className="relative max-w-full min-w-0"
+              style={{ width: cardSizing.width, height: cardSizing.height }}
+            >
+              {processCards.map((card, index) => {
+                const styles = getCardStyles(index);
+                return (
+                  <motion.div
+                    key={card.id}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer select-none touch-manipulation max-w-full min-w-0 outline-none focus:outline-none"
+                    style={{
+                      width: cardSizing.width,
+                      height: cardSizing.height,
+                      zIndex: styles.zIndex,
+                      transformOrigin: 'center center',
+                      maxWidth: '100vw',
+                      minWidth: 0,
+                      WebkitTapHighlightColor: 'transparent',
+                      outline: 'none',
+                      border: 'none',
+                    }}
+                    initial={{
+                      x: 0,
+                      y: 0,
+                      rotate: index * -8,
+                      scale: 1,
+                    }}
+                    animate={styles}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 75,
+                      damping: 22,
+                      scale: { duration: 0.5 },
+                      rotate: { duration: 0.6 },
+                      x: { duration: 0.5 },
+                      y: { duration: 0.5 },
+                    }}
+                    whileHover={
+                      index === activeIndex - 1
+                        ? { scale: 1.02, transition: { duration: 0.2 } }
+                        : { scale: 1.01, transition: { duration: 0.2 } }
+                    }
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleCardClick(index)}
+                  >
+                    <div
+                      className="w-full h-full flex flex-col justify-center items-center text-center rounded-xl xs:rounded-2xl sm:rounded-3xl md:rounded-[40px] bg-[#333434] shadow-lg max-w-full min-w-0 outline-none focus:outline-none"
+                      style={{
+                        padding: cardSizing.padding,
+                        backgroundColor: cardStyles.cardBackgroundColor,
+                        border: cardStyles.cardBorder,
+                        boxShadow: cardStyles.cardBoxShadow,
+                        maxWidth: '100vw',
+                        minWidth: 0,
+                        outline: 'none',
+                      }}
+                    >
+                      <motion.h3
+                        className="text-base xs:text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-4 md:mb-6 text-[#b0ff00] break-words"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.5 }}
+                      >
+                        {card.title}
+                      </motion.h3>
+                      <motion.p
+                        className="text-xs xs:text-sm sm:text-base md:text-lg font-light text-white/80 break-words"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.5 }}
+                      >
+                        {card.description}
+                      </motion.p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.div>
         )}
-        {/* Instructions */}
-        {isMounted && animationPhase === 'cards' && (
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="text-xs text-white/60 mt-2 max-w-20"
-          >
-            Auto-playing
-          </motion.p>
-        )}
-      </div>
-      {/* Card Container */}
-      <div className="h-dvh flex items-center justify-center max-w-7xl w-full mx-auto">
-        <div
-          className="relative"
-          style={{ width: cardSizing.width, height: cardSizing.height }}
-        >
-          {' '}
-          {processCards.map((card, index) => {
-            const styles = getCardStyles(index);
-            return (
-              <motion.div
-                key={card.id}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  width: cardSizing.width,
-                  height: cardSizing.height,
-                  zIndex: styles.zIndex,
-                  transformOrigin: 'center center',
-                }}
-                initial={{
-                  x: 0,
-                  y: 0,
-                  rotate: index * -8,
-                  scale: 1,
-                }}
-                animate={styles}
-                transition={{
-                  type: 'spring',
-                  stiffness: 75,
-                  damping: 22,
-                  scale: { duration: 0.5 },
-                  rotate: { duration: 0.6 },
-                  x: { duration: 0.5 },
-                  y: { duration: 0.5 },
-                }}
-                whileHover={
-                  index === activeIndex - 1
-                    ? { scale: 1.02, transition: { duration: 0.2 } }
-                    : {}
-                }
-              >
-                {' '}
-                <div
-                  className="w-full h-full flex flex-col justify-center items-center text-center rounded-[40px]"
-                  style={{
-                    padding: cardSizing.padding,
-                    backgroundColor: cardStyles.cardBackgroundColor,
-                    border: cardStyles.cardBorder,
-                    boxShadow: cardStyles.cardBoxShadow,
-                  }}
-                >
-                  <motion.h3
-                    className="text-xl sm:text-2xl md:text-3xl font-normal mb-4 md:mb-6"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                  >
-                    {card.title}
-                  </motion.h3>
-                  <motion.p
-                    className="text-sm sm:text-base md:text-lg font-light text-white/80"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                  >
-                    {card.description}
-                  </motion.p>
-                </div>
-              </motion.div>
-            );
-          })}{' '}
-        </div>
-      </div>{' '}
+      </AnimatePresence>
+
       {/* Enhanced Final Message with Creative Effects */}
       <AnimatePresence>
         {showFinalMessage && (
@@ -417,7 +508,7 @@ export default function ProcessSteps() {
               opacity: { duration: 0.8 },
               scale: { duration: 1, delay: 0.2 },
             }}
-            className="absolute bottom-8 sm:bottom-10 md:bottom-12 z-50 flex flex-col items-center"
+            className="absolute inset-0 flex items-center justify-center z-50"
           >
             {/* Animated Background Glow */}
             <motion.div
@@ -431,61 +522,77 @@ export default function ProcessSteps() {
                 times: [0, 0.6, 1],
                 ease: 'easeOut',
               }}
-              className="absolute inset-0 w-full h-full bg-[#b0ff00] rounded-full blur-3xl -z-10"
-              style={{ transform: 'scale(1.5)', opacity: 0.05 }}
+              className="absolute left-1/2 top-1/2 w-[60vw] h-[60vw] max-w-[420px] max-h-[420px] bg-[#b0ff00] rounded-full blur-xl -z-10"
+              style={{
+                transform: 'translate(-50%, -50%) scale(0.85)',
+                opacity: 0.07,
+              }}
             />
 
-            {/* Main Text with Staggered Animation */}
-            <div className="relative overflow-hidden">
-              <motion.h2
-                className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-bold text-center px-4"
-                initial={{ y: 100 }}
-                animate={{ y: 0 }}
-                transition={{
-                  duration: 0.8,
-                  delay: 0.3,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-              >
-                <motion.span
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.5 }}
-                >
-                  All in{' '}
-                </motion.span>
-                <motion.span
-                  className="text-[#b0ff00] relative inline-block"
-                  initial={{ opacity: 0, y: 50, scale: 0.8 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                  }}
+            <div className="text-center">
+              {/* Main Text with Staggered Animation */}
+              <div className="relative overflow-hidden">
+                <motion.h2
+                  className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-center px-4"
+                  initial={{ y: 100 }}
+                  animate={{ y: 0 }}
                   transition={{
                     duration: 0.8,
-                    delay: 0.7,
-                    ease: 'backOut',
+                    delay: 0.3,
+                    ease: [0.16, 1, 0.3, 1],
                   }}
                 >
-                  Weeks!
-                  {/* Pulsing underline effect */}
-                  <motion.div
-                    initial={{ scaleX: 0, opacity: 0 }}
+                  <motion.span
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                    className="text-white"
+                  >
+                    All in{' '}
+                  </motion.span>
+                  <motion.span
+                    className="text-[#b0ff00] relative inline-block"
+                    initial={{ opacity: 0, y: 50, scale: 0.8 }}
                     animate={{
-                      scaleX: [0, 1.2, 1],
-                      opacity: [0, 0.8, 0.4],
+                      opacity: 1,
+                      y: 0,
+                      scale: 1,
                     }}
                     transition={{
-                      duration: 1.5,
-                      delay: 1.2,
-                      times: [0, 0.6, 1],
+                      duration: 0.8,
+                      delay: 0.7,
+                      ease: 'backOut',
                     }}
-                    className="absolute -bottom-2 left-0 right-0 h-1 bg-[#b0ff00] rounded-full"
-                    style={{ transformOrigin: 'center' }}
-                  />
-                </motion.span>
-              </motion.h2>
+                  >
+                    Weeks!
+                    {/* Pulsing underline effect */}
+                    <motion.div
+                      initial={{ scaleX: 0, opacity: 0 }}
+                      animate={{
+                        scaleX: [0, 1.2, 1],
+                        opacity: [0, 0.8, 0.4],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        delay: 1.2,
+                        times: [0, 0.6, 1],
+                      }}
+                      className="absolute -bottom-2 left-0 right-0 h-1 bg-[#b0ff00] rounded-full"
+                      style={{ transformOrigin: 'center' }}
+                    />
+                  </motion.span>
+                </motion.h2>
+              </div>
+
+              {/* Subtle Subtitle */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.5 }}
+                className="text-sm sm:text-base md:text-lg text-white/70 mt-6 text-center px-4 font-light"
+              >
+                Experience lightning-fast development
+              </motion.p>
             </div>
 
             {/* Floating Particles Effect */}
@@ -519,16 +626,6 @@ export default function ProcessSteps() {
               />
             ))}
 
-            {/* Subtle Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.5 }}
-              className="text-sm sm:text-base md:text-lg text-white/70 mt-4 text-center px-4 font-light"
-            >
-              Experience lightning-fast development
-            </motion.p>
-
             {/* Expanding Ring Effect */}
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
@@ -541,7 +638,7 @@ export default function ProcessSteps() {
                 delay: 0.8,
                 ease: 'easeOut',
               }}
-              className="absolute inset-0 border-2 border-[#b0ff00] rounded-full pointer-events-none"
+              className="absolute border-2 border-[#b0ff00] rounded-full pointer-events-none"
               style={{
                 width: '100px',
                 height: '100px',
